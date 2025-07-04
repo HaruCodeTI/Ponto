@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { CreateTimeRecordData, TimeRecordResponse, TimeRecord } from "@/types/time-record";
 import { detectDuplicate, getDefaultDuplicateDetectionConfig } from "@/lib/duplicate-detection";
-
-function generateTimeRecordHash(data: CreateTimeRecordData, timestamp: Date): string {
-  const base = `${data.type}-${data.userId}-${data.employeeId}-${data.companyId}-${timestamp.getTime()}`;
-  return Buffer.from(base).toString("base64").replace(/[^a-zA-Z0-9]/g, "");
-}
+import { 
+  createTimeRecordSuccessNotification, 
+  createTimeRecordFailedNotification,
+  sendNotification 
+} from "@/lib/notifications";
+import { 
+  generateSimpleHash
+} from "@/lib/hash-verification";
 
 export async function POST(req: NextRequest): Promise<NextResponse<TimeRecordResponse>> {
   try {
@@ -18,7 +21,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<TimeRecordRes
     }
 
     const timestamp = new Date();
-    const hash = generateTimeRecordHash(data, timestamp);
+    const hash = generateSimpleHash((data as unknown) as Record<string, unknown>, timestamp);
 
     // Busca registros do mesmo funcionário no dia
     const startOfDay = new Date(timestamp);
@@ -76,6 +79,20 @@ export async function POST(req: NextRequest): Promise<NextResponse<TimeRecordRes
     );
 
     if (duplicateResult.isDuplicate) {
+      // Enviar notificação de falha
+      try {
+        const notification = createTimeRecordFailedNotification(
+          data.userId,
+          data.employeeId,
+          data.companyId,
+          `Registro de ponto duplicado (${duplicateResult.duplicateType})`,
+          data
+        );
+        await sendNotification(notification);
+      } catch (error) {
+        console.error("Erro ao enviar notificação:", error);
+      }
+
       return NextResponse.json({
         success: false,
         error: `Registro de ponto duplicado (${duplicateResult.duplicateType}). ${duplicateResult.warnings.join(' ')}`,
@@ -122,6 +139,18 @@ export async function POST(req: NextRequest): Promise<NextResponse<TimeRecordRes
       photoUrl: timeRecord.photoUrl ?? undefined,
       nfcTag: timeRecord.nfcTag ?? undefined,
     };
+
+    // Enviar notificação de sucesso
+    try {
+      const notification = createTimeRecordSuccessNotification(
+        formattedTimeRecord,
+        "Funcionário", // Em produção, seria buscado do banco
+        "Empresa" // Em produção, seria buscado do banco
+      );
+      await sendNotification(notification);
+    } catch (error) {
+      console.error("Erro ao enviar notificação:", error);
+    }
 
     return NextResponse.json({ success: true, data: formattedTimeRecord }, { status: 201 });
   } catch {

@@ -1,10 +1,4 @@
-import { Metadata } from "next";
 import { TimeRecordAuditLogTable } from "@/components/time-record/time-record-audit-log-table";
-
-export const metadata: Metadata = {
-  title: "Logs de Auditoria - Sistema de Ponto",
-  description: "Visualize logs de auditoria de registro de ponto com detalhes de tentativas, autenticação e validações.",
-};
 
 export default function AuditoriaPage() {
   return (

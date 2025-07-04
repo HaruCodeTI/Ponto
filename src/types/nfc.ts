@@ -21,8 +21,6 @@ export interface NFCCard {
     cardType: 'STANDARD' | 'VIP' | 'TEMPORARY';
     department?: string;
     role?: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    customFields?: Record<string, any>;
   };
 }
 
@@ -70,8 +68,6 @@ export interface CreateNFCCardData {
     cardType: 'STANDARD' | 'VIP' | 'TEMPORARY';
     department?: string;
     role?: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    customFields?: Record<string, any>;
   };
 }
 
@@ -87,8 +83,6 @@ export interface UpdateNFCCardData {
     cardType?: 'STANDARD' | 'VIP' | 'TEMPORARY';
     department?: string;
     role?: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    customFields?: Record<string, any>;
   };
 }
 
@@ -168,6 +162,5 @@ export interface NFCAuditLog {
     ipAddress?: string;
   };
   details: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 } 

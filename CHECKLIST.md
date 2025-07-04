@@ -107,12 +107,12 @@
 
 - [x] 4.13. Implementar validação de horário de trabalho
 - [x] 4.14. Implementar detecção de duplicação de ponto
-- [ ] 4.15. Implementar validação de dispositivo
-- [ ] 4.16. Implementar logs de auditoria
-- [ ] 4.17. Implementar registro imutável (sem edição/apagação)
-- [ ] 4.18. Implementar sistema de justificativas para ajustes
-- [ ] 4.19. Implementar hash/código de verificação para cada registro
-- [ ] 4.20. Implementar logs de falhas e sincronizações
+- [x] 4.15. Implementar validação de dispositivo
+- [x] 4.16. Implementar logs de auditoria
+- [x] 4.17. Implementar registro imutável (sem edição/apagação)
+- [x] 4.18. Implementar sistema de justificativas para ajustes
+- [x] 4.19. Implementar hash/código de verificação para cada registro
+- [x] 4.20. Implementar logs de falhas e sincronizações
 
 ---
 

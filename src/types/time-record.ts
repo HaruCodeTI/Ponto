@@ -253,7 +253,7 @@ export interface TimeRecordAuditLog {
     requestId?: string;
     duration?: number; // Tempo de processamento em ms
     retryCount?: number;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

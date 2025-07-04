@@ -3,6 +3,7 @@ import { Suspense, useState } from "react";
 import { LocationValidator } from "@/components/time-record/location-validator";
 import { IPValidator } from "@/components/time-record/ip-validator";
 import { PhotoCapture } from "@/components/time-record/photo-capture";
+import { DeviceValidator } from "@/components/time-record/device-validator";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +36,7 @@ const userId = "1";
 export default function BaterPontoPage() {
   const [locationValidation, setLocationValidation] = useState<LocationValidation | null>(null);
   const [ipValidation, setIPValidation] = useState<DeviceValidation | null>(null);
+  const [deviceValidation, setDeviceValidation] = useState<DeviceValidation | null>(null);
   const [photoResult, setPhotoResult] = useState<PhotoCaptureResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,8 @@ export default function BaterPontoPage() {
     (operationType === "PRESENCIAL" && locationValidation?.isValid) ||
     (operationType === "HOME_OFFICE" && ipValidation?.isValid) ||
     (operationType === "HYBRID" && (isWorkingFromHome ? ipValidation?.isValid : locationValidation?.isValid)) &&
-    workTimeValidation?.isValid;
+    workTimeValidation?.isValid &&
+    deviceValidation?.isValid;
 
   // Log de tentativa de registro
   const logAttempt = async (status: 'SUCCESS' | 'FAILED', error?: string) => {
@@ -66,7 +69,7 @@ export default function BaterPontoPage() {
         },
         validations: {
           location: locationValidation || { isValid: false },
-          device: ipValidation || { isValid: false },
+          device: deviceValidation || { isValid: false },
           time: { isValid: true, isWithinWorkHours: true, isWithinTolerance: true },
           isDuplicate: false,
           isValid: status === 'SUCCESS',
@@ -201,7 +204,15 @@ export default function BaterPontoPage() {
       </Card>
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Etapa 4: Captura de Foto (Opcional)</CardTitle>
+          <CardTitle>Etapa 4: Validação de Dispositivo</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DeviceValidator onValidationChange={setDeviceValidation} />
+        </CardContent>
+      </Card>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Etapa 5: Captura de Foto (Opcional)</CardTitle>
         </CardHeader>
         <CardContent>
           <PhotoCapture config={DEFAULT_PHOTO_CONFIG} onPhotoCapture={setPhotoResult} />

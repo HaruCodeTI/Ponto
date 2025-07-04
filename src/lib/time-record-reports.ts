@@ -156,7 +156,7 @@ function generateMockTimeRecords(filters: TimeRecordReportFilters): TimeRecord[]
 /**
  * Agrega registros de ponto por período
  */
-function aggregateTimeRecords(records: TimeRecord[], filters: TimeRecordReportFilters): TimeRecordAggregatedData[] {
+function aggregateTimeRecords(records: TimeRecord[], _filters: TimeRecordReportFilters): TimeRecordAggregatedData[] {
   const aggregated: Record<string, TimeRecordAggregatedData> = {};
   
   // Agrupa registros por funcionário e data
@@ -274,7 +274,7 @@ function calculateTimeRecordStats(data: TimeRecordAggregatedData[]): TimeRecordS
  * Gera resumos baseados no tipo de relatório
  */
 function generateSummaries(data: TimeRecordAggregatedData[], reportType: ReportType) {
-  const summaries: any = {};
+  const summaries: Record<string, unknown> = {};
   
   if (reportType === 'DAILY_SUMMARY' || reportType === 'COMPANY_OVERVIEW') {
     summaries.daily = generateDailySummaries(data);
@@ -438,7 +438,7 @@ function generateMonthlySummaries(data: TimeRecordAggregatedData[]): MonthlyTime
  * Gera análises específicas baseadas no tipo de relatório
  */
 function generateAnalyses(data: TimeRecordAggregatedData[], reportType: ReportType) {
-  const analyses: any = {};
+  const analyses: Record<string, unknown> = {};
   
   if (reportType === 'ATTENDANCE_ANALYSIS' || reportType === 'COMPANY_OVERVIEW') {
     analyses.attendance = generateAttendanceAnalysis(data);
@@ -755,7 +755,7 @@ export async function exportTimeRecordReport(
 ): Promise<string> {
   // Em produção, implementaria exportação real
   // Por enquanto, simula exportação
-  const fileName = config.fileName || `relatorio_ponto_${new Date().toISOString().split('T')[0]}`;
+  // const _fileName = config.fileName || `relatorio_ponto_${new Date().toISOString().split('T')[0]}`;
   
   switch (config.format) {
     case 'JSON':

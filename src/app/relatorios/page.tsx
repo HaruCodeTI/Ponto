@@ -1,10 +1,4 @@
-import { Metadata } from "next";
 import { TimeRecordReportTable } from "@/components/time-record/time-record-report-table";
-
-export const metadata: Metadata = {
-  title: "Relatórios de Ponto - Sistema de Ponto",
-  description: "Gere, visualize e exporte relatórios completos de ponto, presença, horas extras, atrasos e mais.",
-};
 
 export default function RelatoriosPage() {
   return (

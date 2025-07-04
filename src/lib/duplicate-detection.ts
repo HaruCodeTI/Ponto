@@ -3,8 +3,7 @@ import {
   DuplicateDetectionConfig, 
   DuplicateDetectionResult, 
   DuplicateDetectionStrategy,
-  DuplicateRules,
-  RecordType 
+  DuplicateRules
 } from '@/types/time-record';
 
 /**

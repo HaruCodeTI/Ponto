@@ -3,6 +3,7 @@ import { Suspense, useState } from "react";
 import { LocationValidator } from "@/components/time-record/location-validator";
 import { IPValidator } from "@/components/time-record/ip-validator";
 import { PhotoCapture } from "@/components/time-record/photo-capture";
+import { DeviceValidator } from "@/components/time-record/device-validator";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,7 @@ import { Location } from "@/lib/geolocation";
 import { LocationValidation, DeviceValidation, PhotoCaptureResult, WorkTimeValidation } from "@/types/time-record";
 import { DEFAULT_PHOTO_CONFIG } from "@/lib/photo-capture";
 import { useRouter } from "next/navigation";
-import { Clock, MapPin, Wifi, Camera, CheckCircle, XCircle } from "lucide-react";
+import { Clock, MapPin, Wifi, Camera, CheckCircle, XCircle, Smartphone } from "lucide-react";
 import { NFCReader } from "@/components/nfc/nfc-reader";
 import { BiometricAuth } from "@/components/biometric/biometric-auth";
 import { WorkTimeValidator } from "@/components/time-record/work-time-validator";
@@ -34,6 +35,7 @@ const companyId = "1";
 export default function BaterPontoMobilePage() {
   const [locationValidation, setLocationValidation] = useState<LocationValidation | null>(null);
   const [ipValidation, setIPValidation] = useState<DeviceValidation | null>(null);
+  const [deviceValidation, setDeviceValidation] = useState<DeviceValidation | null>(null);
   const [photoResult, setPhotoResult] = useState<PhotoCaptureResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +48,8 @@ export default function BaterPontoMobilePage() {
     (operationType === "PRESENCIAL" && locationValidation?.isValid) ||
     (operationType === "HOME_OFFICE" && ipValidation?.isValid) ||
     (operationType === "HYBRID" && (isWorkingFromHome ? ipValidation?.isValid : locationValidation?.isValid)) &&
-    workTimeValidation?.isValid;
+    workTimeValidation?.isValid &&
+    deviceValidation?.isValid;
 
   const handleRegister = async () => {
     setLoading(true);
@@ -262,7 +265,20 @@ export default function BaterPontoMobilePage() {
         </CardContent>
       </Card>
 
-      {/* Step 4: Photo Capture */}
+      {/* Step 4: Device Validation */}
+      <Card className="mb-4 shadow-lg">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center text-lg">
+            <Smartphone className="h-5 w-5 mr-2 text-indigo-600" />
+            Validação de Dispositivo
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DeviceValidator onValidationChange={setDeviceValidation} />
+        </CardContent>
+      </Card>
+
+      {/* Step 5: Photo Capture */}
       <Card className="mb-6 shadow-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center text-lg">

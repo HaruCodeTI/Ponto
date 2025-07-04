@@ -1,0 +1,167 @@
+import { NextRequest, NextResponse } from "next/server";
+import { 
+  approveAdjustment, 
+  rejectAdjustment, 
+  applyAdjustment,
+  DEFAULT_IMMUTABLE_CONFIG,
+  AdjustmentJustification
+} from "@/lib/immutable-records";
+
+/**
+ * PUT - Aprovar ou rejeitar ajuste
+ */
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+): Promise<NextResponse> {
+  try {
+    const adjustmentId = params.id;
+    const body = await req.json();
+    const { action, approvedBy, rejectedBy, rejectionReason, config = DEFAULT_IMMUTABLE_CONFIG } = body;
+
+    // Em produção, isso seria buscado do banco
+    // Por enquanto, simula um ajuste
+    const mockAdjustment: AdjustmentJustification = {
+      id: adjustmentId,
+      originalRecordId: "record_1",
+      reason: "SYSTEM_ERROR",
+      description: "Erro no sistema causou registro incorreto",
+      requestedBy: "user_1",
+      requestedAt: new Date().toISOString(),
+      status: "PENDING",
+      newData: { timestamp: new Date().toISOString() },
+      auditTrail: {
+        originalRecord: {
+          id: "record_1",
+          type: "ENTRY",
+          timestamp: "2024-01-01T08:00:00Z",
+          hash: "hash_1",
+          createdAt: "2024-01-01T08:00:00Z",
+          userId: "user_1",
+          employeeId: "emp_1",
+          companyId: "comp_1",
+        },
+        changes: { timestamp: { from: "2024-01-01T08:00:00Z", to: "2024-01-01T08:05:00Z" } },
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    if (action === 'approve') {
+      if (!approvedBy) {
+        return NextResponse.json({ 
+          success: false, 
+          error: "Aprovador é obrigatório" 
+        }, { status: 400 });
+      }
+
+      const updatedAdjustment = await approveAdjustment(
+        mockAdjustment,
+        approvedBy,
+        config
+      );
+
+      // Aplica o ajuste automaticamente após aprovação
+      const adjustedRecord = await applyAdjustment(
+        mockAdjustment.auditTrail.originalRecord,
+        updatedAdjustment,
+        approvedBy,
+        config
+      );
+
+      return NextResponse.json({ 
+        success: true, 
+        data: {
+          adjustment: updatedAdjustment,
+          adjustedRecord,
+          applied: true
+        }
+      });
+
+    } else if (action === 'reject') {
+      if (!rejectedBy || !rejectionReason) {
+        return NextResponse.json({ 
+          success: false, 
+          error: "Rejeitador e motivo são obrigatórios" 
+        }, { status: 400 });
+      }
+
+      const updatedAdjustment = await rejectAdjustment(
+        mockAdjustment,
+        rejectedBy,
+        rejectionReason,
+        config
+      );
+
+      return NextResponse.json({ 
+        success: true, 
+        data: {
+          adjustment: updatedAdjustment,
+          applied: false
+        }
+      });
+
+    } else {
+      return NextResponse.json({ 
+        success: false, 
+        error: "Ação inválida. Use 'approve' ou 'reject'" 
+      }, { status: 400 });
+    }
+
+  } catch (error) {
+    console.error("Erro ao processar ajuste:", error);
+    return NextResponse.json({ 
+      success: false, 
+      error: "Erro interno do servidor" 
+    }, { status: 500 });
+  }
+}
+
+/**
+ * GET - Obter detalhes de um ajuste específico
+ */
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+): Promise<NextResponse> {
+  try {
+    const adjustmentId = params.id;
+
+    // Em produção, isso seria buscado do banco
+    const mockAdjustment: AdjustmentJustification = {
+      id: adjustmentId,
+      originalRecordId: "record_1",
+      reason: "SYSTEM_ERROR",
+      description: "Erro no sistema causou registro incorreto",
+      requestedBy: "user_1",
+      requestedAt: new Date().toISOString(),
+      status: "PENDING",
+      newData: { timestamp: new Date().toISOString() },
+      auditTrail: {
+        originalRecord: {
+          id: "record_1",
+          type: "ENTRY",
+          timestamp: "2024-01-01T08:00:00Z",
+          hash: "hash_1",
+          createdAt: "2024-01-01T08:00:00Z",
+          userId: "user_1",
+          employeeId: "emp_1",
+          companyId: "comp_1",
+        },
+        changes: { timestamp: { from: "2024-01-01T08:00:00Z", to: "2024-01-01T08:05:00Z" } },
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    return NextResponse.json({ 
+      success: true, 
+      data: mockAdjustment 
+    });
+
+  } catch (error) {
+    console.error("Erro ao buscar ajuste:", error);
+    return NextResponse.json({ 
+      success: false, 
+      error: "Erro interno do servidor" 
+    }, { status: 500 });
+  }
+} 
