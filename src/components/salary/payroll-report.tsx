@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CalendarIcon, DollarSign, AlertTriangle, Users } from "lucide-react";
 import Papa from "papaparse";
+import { exportPayrollReportToPDF } from "@/lib/pdf-export";
 
 interface PayrollReportProps {
   companyId?: string;
@@ -18,6 +19,7 @@ interface PayrollReportProps {
 interface PayrollEmployee {
   id: string;
   name: string;
+  position?: string;
   salary: number;
   monthlyCalculation: {
     totalRegularMinutes: number;
@@ -152,6 +154,24 @@ export function PayrollReport({ companyId: _companyId }: PayrollReportProps) {
     document.body.removeChild(link);
   };
 
+  const handleExportPDF = () => {
+    if (data.length === 0) return;
+    const reportData = {
+      month: formatMonth(month),
+      employees: data.map(emp => ({
+        name: emp.name,
+        position: emp.position || "N/A",
+        salaryFormatted: emp.proportionalSalary.baseSalaryFormatted,
+        hoursWorked: emp.monthlyCalculation.totalRegularFormatted,
+        overtimeFormatted: emp.proportionalSalary.overtimeValueFormatted,
+        nightShiftFormatted: emp.proportionalSalary.nightShiftValueFormatted,
+        deductionsFormatted: emp.proportionalSalary.totalDiscountsFormatted,
+        totalToReceiveFormatted: emp.proportionalSalary.finalSalaryFormatted,
+      }))
+    };
+    exportPayrollReportToPDF(reportData);
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -181,6 +201,9 @@ export function PayrollReport({ companyId: _companyId }: PayrollReportProps) {
               </Button>
               <Button onClick={handleExportCSV} variant="outline" disabled={data.length === 0} className="w-full">
                 Exportar CSV
+              </Button>
+              <Button onClick={handleExportPDF} variant="outline" disabled={data.length === 0} className="w-full">
+                Exportar PDF
               </Button>
             </div>
           </div>

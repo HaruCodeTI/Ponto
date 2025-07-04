@@ -880,3 +880,204 @@
 - Build e lint revisados
 
 ---
+
+## Módulo 6: Relatórios da Empresa
+
+### 6.1 - Implementar relatório mensal geral (concluído)
+- Criado endpoint `/api/reports/monthly` para relatório mensal consolidado da empresa
+- Criado componente React `MonthlyReport` para visualização do relatório
+- Implementado cálculo consolidado de todos os funcionários no período
+- Resumo executivo com métricas principais: funcionários, horas regulares, horas extras, total salários
+- Métricas de performance: taxa de presença, pontualidade, média por funcionário
+- Detalhamento por funcionário com tabela responsiva
+- Alertas automáticos para atrasos excessivos, horas extras e baixa presença
+- Interface responsiva com cards organizados e badges coloridos
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.2 - Implementar filtros por mês, setor e jornada (concluído)
+- Adicionados filtros de mês, setor/cargo (position) e jornada (workSchedule) no endpoint `/api/reports/monthly`
+- Atualizado componente React `MonthlyReport` para permitir seleção desses filtros
+- Filtros aplicados tanto na API quanto na interface, exibindo apenas funcionários filtrados
+- UI responsiva, clara e alinhada ao padrão do projeto
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.3 - Implementar exportação para Excel (.xlsx) (concluído)
+- Adicionada dependência `xlsx` (SheetJS) para exportação de relatórios
+- Implementado botão "Exportar Excel" no componente `MonthlyReport`
+- Exportação inclui todos os dados filtrados: funcionário, setor, jornada, métricas de ponto
+- Arquivo gerado com nome `relatorio-mensal-{mes}.xlsx` e cabeçalhos claros
+- Compatibilidade total com Excel e outros editores de planilha
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.4 - Implementar exportação para CSV (.csv) (concluído)
+- Implementado botão "Exportar CSV" no componente `MonthlyReport`
+- Usa a biblioteca `papaparse` (já instalada) para gerar arquivo CSV
+- Mesmo conteúdo do Excel: funcionário, setor, jornada, métricas de ponto
+- Arquivo gerado com nome `relatorio-mensal-{mes}.csv` e cabeçalhos claros
+- Compatibilidade total com Excel e outros editores de planilha
+- Botões de exportação organizados lado a lado (CSV e Excel)
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.5 - Implementar agendamento de relatórios (concluído)
+- Criado modelo `ReportSchedule` no Prisma para armazenar configurações de agendamento
+- Criado endpoint `/api/reports/schedule` para gerenciar agendamentos (POST, GET, DELETE)
+- Criado componente React `ReportScheduler` para interface de configuração
+- Funcionalidades: frequência (diário, semanal, mensal), destinatários por email, formato (Excel/CSV/Ambos)
+- Filtros opcionais por setor/cargo e jornada de trabalho
+- Status ativo/inativo e cálculo de próxima execução
+- Interface responsiva com validações e feedback visual
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.6 - Implementar relatórios de horas trabalhadas, extras e banco de horas (concluído)
+- Criado endpoint `/api/reports/hours` para relatório consolidado de horas
+- Criado componente React `HoursReport` para visualização do relatório
+- Funcionalidades: filtros por período, funcionário, setor e jornada
+- Relatório inclui: horas trabalhadas, horas extras, atrasos, saídas antecipadas
+- Banco de horas: saldo inicial, créditos (horas extras), débitos (atrasos/saídas), saldo final
+- Resumo executivo com totais e médias por funcionário
+- Exportação para Excel e CSV com todos os dados
+- Alertas automáticos para saldo negativo e excesso de horas extras
+- Interface responsiva com tabela detalhada e cards de resumo
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.7 - Implementar exportação em PDF dos relatórios (concluído)
+- Criado utilitário `src/lib/pdf-export.ts` com funções para exportação em PDF
+- Instaladas dependências `jspdf` e `jspdf-autotable` para geração de PDFs
+- Funções específicas para cada tipo de relatório: `exportMonthlyReportToPDF`, `exportHoursReportToPDF`, `exportPayrollReportToPDF`
+- PDFs formatados com cabeçalho, subtítulo, dados da empresa, período e data de geração
+- Tabelas bem estruturadas com cores alternadas, cabeçalhos destacados e numeração de páginas
+- Botão "Exportar PDF" adicionado aos componentes: `MonthlyReport`, `HoursReport`, `PayrollReport`
+- Orientação landscape para melhor visualização de tabelas extensas
+- Nomes de arquivo descritivos com período/mês
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.8 - Implementar relatório individual diário (concluído)
+- Criado endpoint `/api/reports/individual` para relatório individual por funcionário
+- Criado componente React `IndividualReport` para visualização do relatório individual
+- Funcionalidades: filtros por funcionário, data específica ou período
+- Detalhamento diário com horários de entrada/saída, pausas, horas trabalhadas, extras, atrasos
+- Resumo executivo com métricas: dias trabalhados, horas regulares, horas extras, taxa de presença
+- Exportação para Excel, CSV e PDF com todos os dados
+- Interface responsiva com tabela detalhada e cards de resumo
+- Alertas automáticos para atrasos, saídas antecipadas e horas extras excessivas
+- Integração com página de relatórios usando tabs
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.9 - Implementar histórico de localizações (concluído)
+- Criado endpoint `/api/reports/locations` para histórico de localizações por funcionário
+- Criado componente React `LocationHistory` para visualização do histórico de localizações
+- Funcionalidades: filtros por funcionário e período (padrão: últimos 30 dias)
+- Análise de localizações: agrupamento por coordenadas, cálculo de visitas e tempo gasto
+- Cálculo de distâncias entre localizações usando fórmula de Haversine
+- Estatísticas: localização mais frequente, distância total, média por dia
+- Histórico diário com registros, locais únicos e distâncias percorridas
+- Exportação para Excel, CSV e PDF com dados detalhados
+- Interface responsiva com tabelas organizadas e cards de resumo
+- Alertas automáticos para distâncias excessivas e muitos locais diferentes
+- Integração com página de relatórios usando tabs
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.10 - Implementar análise de jornada contratada (concluído)
+- Criado endpoint `/api/reports/work-schedule` para análise de jornada contratada vs realizada
+- Criado componente React `WorkScheduleAnalysis` para visualização da análise de jornada
+- Funcionalidades: filtros por funcionário, período mensal ou personalizado
+- Comparação entre jornada contratada e horas efetivamente trabalhadas
+- Análise de conformidade com contratos de trabalho e identificação de desvios
+- Cálculo de taxa de conformidade, horas extras, faltas e desvios médios
+- Resumo executivo com métricas principais: dias trabalhados, horas contratadas, horas trabalhadas
+- Análise diária detalhada com status: conforme, horas extras, faltou, incompleto
+- Exportação para Excel, CSV e PDF com dados completos
+- Interface responsiva com tabela detalhada, cards de resumo e alertas automáticos
+- Alertas para conformidade baixa, excesso de horas extras e muitas faltas
+- Integração com página de relatórios usando tabs
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.11 - Implementar relatório de produtividade (concluído)
+- Criado endpoint `/api/reports/productivity` para análise de produtividade por funcionário
+- Criado componente React `ProductivityReport` para visualização do relatório
+- Métricas: dias trabalhados, pontualidade, atrasos, saídas antecipadas, faltas, horas extras, presença, eficiência (horas trabalhadas vs contratadas)
+- Filtros por período, funcionário, setor/cargo e jornada
+- Exportação para Excel, CSV e PDF
+- Interface responsiva com cards, tabela, alertas e badges
+- Integração na página de relatórios com nova tab "Produtividade"
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.12 - Implementar Espelho de Ponto mensal (obrigatório) (concluído)
+- Criado endpoint `/api/reports/mirror` para espelho de ponto mensal conforme Portaria 671/2021
+- Criado componente React `MirrorReport` para visualização do espelho de ponto
+- Formato obrigatório: data, entrada, saída, pausa, total de horas, observações
+- Cabeçalho com dados do funcionário, empresa e período
+- Resumo mensal com totais: dias trabalhados, horas totais, faltas
+- Exportação para PDF (formato oficial) e Excel
+- Interface responsiva com tabela detalhada e badges coloridos
+- Conformidade com legislação trabalhista brasileira
+- Integração na página de relatórios com nova tab "Espelho de Ponto"
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.13 - Implementar exportação AFD para fiscalização (concluído)
+- Criado endpoint `/api/reports/afd` para exportação AFD conforme Portaria 671/2021
+- Criado componente React `AFDReport` para visualização e download do arquivo AFD
+- Formato AFD obrigatório: cabeçalho, registros de ponto, totalizadores, trailer
+- Filtros por funcionário (opcional) e período obrigatório
+- Preview do conteúdo do arquivo AFD com formatação
+- Download do arquivo .afd para fiscalização
+- Resumo com estatísticas: registros, funcionários, linhas totais
+- Interface responsiva com cards, preview e informações sobre estrutura
+- Conformidade com legislação trabalhista brasileira
+- Integração na página de relatórios com nova tab "AFD"
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.14 - Implementar envio automático por email (concluído)
+- Criado endpoint `/api/reports/email` para configuração de envio automático de relatórios
+- Criado componente React `EmailScheduler` para interface de configuração
+- Funcionalidades: configuração de destinatários, frequência (diário, semanal, mensal), formato (Excel, CSV, ambos)
+- Seleção de tipo de relatório (mensal, individual, produtividade, localizações, jornada, espelho, AFD)
+- Validação de emails e interface responsiva com formulários
+- Status ativo/inativo e visualização da configuração atual
+- Integração na página de relatórios com nova tab "Email"
+- Interface com validações, feedback visual e alertas informativos
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.15 - Implementar configuração de formato (concluído)
+- Criado modelo `ReportFormatConfig` no Prisma para armazenar configurações de formato
+- Criado endpoint `/api/reports/format-config` para gerenciar configurações de formato
+- Criado componente React `FormatConfig` para interface de configuração
+- Funcionalidades: configuração por tipo de relatório, formatos habilitados, formato padrão
+- Restrições por tipo de relatório (AFD apenas AFD, Espelho PDF obrigatório, etc.)
+- Interface com tabs para cada tipo de relatório, switches para formatos, select para padrão
+- Resumo visual das configurações com indicadores de status
+- Integração na página de relatórios com nova tab "Formatos"
+- Migration aplicada e Prisma Client regenerado
+- Checklist atualizado
+- Build e lint revisados
+
+### 6.16 - Implementar agendamento avançado de relatórios (concluído)
+- Criado modelo `AdvancedReportSchedule` no Prisma para agendamentos avançados
+- Criado endpoint `/api/reports/advanced-schedule` para gerenciar agendamentos detalhados
+- Criado componente React `AdvancedScheduler` para interface de agendamento avançado
+- Funcionalidades: agendamento simples/avançado, frequência (diário, semanal, mensal, personalizado)
+- Configuração de horário, dias da semana, dia do mês, meses específicos
+- Gestão de destinatários com validação de emails
+- Seleção de formato e descrição opcional
+- Interface com tabs para cada tipo de relatório, configurações detalhadas
+- Resumo visual dos agendamentos com indicadores de status
+- Integração na página de relatórios com nova tab "Avançado"
+- Migration aplicada e Prisma Client regenerado
+- Checklist atualizado
+- Build e lint revisados
+
+---

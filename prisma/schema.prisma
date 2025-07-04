@@ -84,6 +84,9 @@ model Company {
   employees   Employee[]
   timeRecords TimeRecord[]
   payments    Payment[]
+  reportSchedules ReportSchedule[]
+  reportFormatConfigs ReportFormatConfig[]
+  advancedReportSchedules AdvancedReportSchedule[]
 }
 
 model Employee {
@@ -141,6 +144,56 @@ model Payment {
   updatedAt  DateTime @updatedAt
 }
 
+model ReportSchedule {
+  id             String   @id @default(cuid())
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId      String   @unique
+  frequency      ReportFrequency @default(MONTHLY)
+  dayOfMonth     Int?     // Para relatórios mensais (1-31)
+  recipients     String   // Emails separados por vírgula
+  format         ReportFormat @default(EXCEL)
+  includeFilters String?  // JSON com filtros (position, workSchedule)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ReportFormatConfig {
+  id             String   @id @default(cuid())
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId      String
+  reportType     String   // Tipo do relatório (monthly, individual, etc.)
+  defaultFormat  ReportFormat @default(EXCEL)
+  enabledFormats String   // Formatos habilitados separados por vírgula
+  customSettings String?  // JSON com configurações customizadas
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([companyId, reportType])
+}
+
+model AdvancedReportSchedule {
+  id                   String   @id @default(cuid())
+  company              Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId            String
+  reportType           String   // Tipo do relatório
+  scheduleType         String   // "simple" | "advanced"
+  frequency            String   // "daily" | "weekly" | "monthly" | "custom"
+  time                 String   // "HH:MM"
+  daysOfWeek           String?  // JSON array [0-6] para weekly
+  dayOfMonth           Int?     // 1-31 para monthly
+  months               String?  // JSON array [0-11] para custom
+  recipients           String   // Emails separados por vírgula
+  format               ReportFormat @default(EXCEL)
+  isActive             Boolean  @default(true)
+  customCronExpression String?  // Expressão cron customizada
+  description          String?  // Descrição do agendamento
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([companyId, reportType])
+}
+
 enum UserRole {
   ADMIN
   MANAGER
@@ -177,4 +230,16 @@ enum PaymentStatus {
   PAID
   FAILED
   CANCELED
+}
+
+enum ReportFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum ReportFormat {
+  EXCEL
+  CSV
+  BOTH
 }

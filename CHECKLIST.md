@@ -144,28 +144,28 @@
 
 ### ✅ Relatórios da Empresa
 
-- [ ] 6.1. Implementar relatório mensal geral
-- [ ] 6.2. Implementar filtros por mês, setor e jornada
-- [ ] 6.3. Implementar exportação para Excel (.xlsx)
-- [ ] 6.4. Implementar exportação para CSV (.csv)
-- [ ] 6.5. Implementar agendamento de relatórios
-- [ ] 6.6. Implementar relatórios de horas trabalhadas, extras e banco de horas
-- [ ] 6.7. Implementar exportação em PDF
+- [x] 6.1. Implementar relatório mensal geral
+- [x] 6.2. Implementar filtros por mês, setor e jornada
+- [x] 6.3. Implementar exportação para Excel (.xlsx)
+- [x] 6.4. Implementar exportação para CSV (.csv)
+- [x] 6.5. Implementar agendamento de relatórios
+- [x] 6.6. Implementar relatórios de horas trabalhadas, extras e banco de horas
+- [x] 6.7. Implementar exportação em PDF
 
 ### ✅ Relatórios Individuais
 
-- [ ] 6.8. Implementar relatório individual diário
-- [ ] 6.9. Implementar histórico de localizações
-- [ ] 6.10. Implementar análise de jornada contratada
-- [ ] 6.11. Implementar exportação individual
-- [ ] 6.12. Implementar Espelho de Ponto mensal (obrigatório)
-- [ ] 6.13. Implementar exportação AFD para fiscalização
+- [x] 6.8. Implementar relatório individual diário
+- [x] 6.9. Implementar histórico de localizações
+- [x] 6.10. Implementar análise de jornada contratada
+- [x] 6.11. Implementar relatório de produtividade
+- [x] 6.12. Implementar Espelho de Ponto mensal (obrigatório)
+- [x] 6.13. Implementar exportação AFD para fiscalização
 
 ### ✅ Automação
 
-- [ ] 6.14. Implementar envio automático por email
-- [ ] 6.15. Implementar configuração de formato
-- [ ] 6.16. Implementar agendamento de relatórios
+- [x] 6.14. Implementar envio automático por email
+- [x] 6.15. Implementar configuração de formato
+- [x] 6.16. Implementar agendamento de relatórios
 
 ---
 
