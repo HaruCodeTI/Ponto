@@ -1,0 +1,156 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          UserRole  @default(EMPLOYEE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts    Account[]
+  sessions    Session[]
+  company     Company?     @relation(fields: [companyId], references: [id])
+  companyId   String?
+  employee    Employee?
+  timeRecords TimeRecord[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Company {
+  id            String        @id @default(cuid())
+  name          String
+  cnpj          String        @unique
+  address       String
+  latitude      Float?
+  longitude     Float?
+  operationType OperationType @default(PRESENCIAL)
+  employeeCount Int
+  plan          Plan          @default(BASIC)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  users       User[]
+  employees   Employee[]
+  timeRecords TimeRecord[]
+}
+
+model Employee {
+  id               String       @id @default(cuid())
+  cpf              String       @unique
+  position         String
+  salary           Float
+  workSchedule     WorkSchedule @default(PRESENCIAL)
+  toleranceMinutes Int          @default(15)
+  bankHours        Float        @default(0)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String       @unique
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   String
+  timeRecords TimeRecord[]
+}
+
+model TimeRecord {
+  id         String     @id @default(cuid())
+  type       RecordType
+  timestamp  DateTime   @default(now())
+  latitude   Float?
+  longitude  Float?
+  ipAddress  String?
+  deviceInfo String?
+  photoUrl   String?
+  nfcTag     String?
+  hash       String     @unique // Para garantir imutabilidade
+  createdAt  DateTime   @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId  String
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum OperationType {
+  PRESENCIAL
+  HOME_OFFICE
+  HYBRID
+}
+
+enum Plan {
+  BASIC
+  PROFESSIONAL
+  PREMIUM
+}
+
+enum WorkSchedule {
+  PRESENCIAL
+  HOME_OFFICE
+  HYBRID
+}
+
+enum RecordType {
+  ENTRY
+  EXIT
+  BREAK_START
+  BREAK_END
+}

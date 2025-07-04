@@ -1,103 +1,146 @@
-import Image from "next/image";
+"use client";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
+
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="bg-background min-h-screen p-8">
+      <div className="mx-auto max-w-4xl space-y-8">
+        {/* Header */}
+        <div className="space-y-4 text-center">
+          <h1 className="text-4xl font-bold tracking-tight">Sistema de Controle de Ponto</h1>
+          <p className="text-muted-foreground text-xl">
+            Sistema inteligente com geolocalização e NFC
+          </p>
+          <div className="flex justify-center gap-2">
+            <Badge variant="default">Mobile</Badge>
+            <Badge variant="secondary">Desktop</Badge>
+            <Badge variant="outline">NFC</Badge>
+            <Badge variant="outline">Geolocalização</Badge>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Cards de Funcionalidades */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Bater Ponto */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-2xl">⏰</span>
+                Bater Ponto
+              </CardTitle>
+              <CardDescription>Registre entrada e saída com geolocalização</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full">
+                <Link href="/bater-ponto">Bater Ponto</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Gestão de Funcionários */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-2xl">👥</span>
+                Funcionários
+              </CardTitle>
+              <CardDescription>Cadastre e gerencie colaboradores</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/funcionarios">Gerenciar</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Relatórios */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-2xl">📊</span>
+                Relatórios
+              </CardTitle>
+              <CardDescription>Visualize dados e exporte relatórios</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/relatorios">Ver Relatórios</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Configurações */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-2xl">⚙️</span>
+                Configurações
+              </CardTitle>
+              <CardDescription>Configure empresa e regras de ponto</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/empresa/configuracoes">Configurar</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* NFC */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-2xl">📱</span>
+                NFC
+              </CardTitle>
+              <CardDescription>Autenticação por crachá digital</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/nfc">Configurar NFC</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Compliance */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-2xl">⚖️</span>
+                Compliance
+              </CardTitle>
+              <CardDescription>Portaria 671/2021 e LGPD</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/compliance">Verificar</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Footer com Avatar */}
+        <div className="space-y-4 text-center">
+          <div className="flex items-center justify-center gap-4">
+            <Avatar>
+              <AvatarImage src="/avatar.png" />
+              <AvatarFallback>SP</AvatarFallback>
+            </Avatar>
+            <div className="text-left">
+              <p className="font-medium">Sistema de Ponto</p>
+              <p className="text-muted-foreground text-sm">Versão 1.0.0</p>
+            </div>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Desenvolvido com Next.js, TypeScript e Shadcn UI
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
