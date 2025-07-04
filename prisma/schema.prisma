@@ -83,6 +83,7 @@ model Company {
   users       User[]
   employees   Employee[]
   timeRecords TimeRecord[]
+  payments    Payment[]
 }
 
 model Employee {
@@ -101,6 +102,7 @@ model Employee {
   company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   companyId   String
   timeRecords TimeRecord[]
+  payments    Payment[]
 }
 
 model TimeRecord {
@@ -122,6 +124,21 @@ model TimeRecord {
   employeeId String
   company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   companyId  String
+}
+
+model Payment {
+  id         String   @id @default(cuid())
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId  String
+  month      String   // YYYY-MM
+  amount     Float
+  status     PaymentStatus @default(PENDING)
+  paidAt     DateTime?
+  payrollRef String? // Referência da folha/relatório
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 enum UserRole {
@@ -153,4 +170,11 @@ enum RecordType {
   EXIT
   BREAK_START
   BREAK_END
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELED
 }

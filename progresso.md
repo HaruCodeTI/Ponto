@@ -227,6 +227,15 @@
 - Pronta para integração futura com gateway de pagamento
 - **Status:** Gestão de planos pronta para expansão e integração
 
+### 3.0 - Sidebar de Navegação Fixa e Responsiva
+- Criado componente `Sidebar` em `src/components/ui/sidebar.tsx` com links e ícones para todas as seções principais: Dashboard, Bater Ponto, Funcionários, Empresa, Relatórios, Ajustes, Logs, Configurações, Sair
+- Utilizado `use client` para permitir hooks do React (`usePathname`) e destacar a rota ativa
+- Visual moderno, responsivo, com TailwindCSS, Shadcn UI e ícones Lucide
+- Sidebar fixa à esquerda, conteúdo principal com `ml-56` para não sobrepor
+- Integrada ao layout global em `src/app/layout.tsx`
+- Segue padrões de modularização, tipagem e responsividade do projeto
+- **Status:** Sidebar implementada, funcional e pronta para expansão
+
 ### 3.1 - Interface/types para Funcionário
 - Criado arquivo `src/types/employee.ts` com a interface `Employee` e tipo auxiliar `WorkSchedule`
 - Tipagem baseada no schema do backend, cobrindo todos os campos relevantes
@@ -757,5 +766,117 @@
 - Interface web responsiva para monitoramento
 
 **Próxima etapa:** Item 4.21 - Sistema de Backup e Restauração
+
+### 4.21 - Sistema de Backup e Restauração (em andamento)
+- Adicionado ao checklist o item 4.21: Implementar sistema de backup e restauração (manual e automático, com download/upload e logs de auditoria)
+- Escopo inicial:
+  - Backup manual e automático dos dados principais (banco, arquivos)
+  - Endpoint/admin para acionar backup e restaurar
+  - Armazenamento seguro (local ou S3)
+  - Logs de operações de backup/restauração
+  - Download do backup (admin)
+  - Restauração a partir de arquivo
+- Tecnologias sugeridas: Next.js API Route, Prisma, Node.js fs, integração futura com S3
+- Próximos passos:
+  1. Criar utilitário `src/lib/backup.ts` para gerar/restaurar backup
+  2. Criar API `/api/backup` para acionar backup e listar arquivos
+  3. Criar componente/admin para acionar backup/restauração
+
+### 5.1 - Implementar cálculo de horas trabalhadas (concluído)
+- Criado utilitário `src/lib/salary-calculations.ts` para cálculo diário, semanal e mensal
+- Criada API `/api/salary/calculate-hours` para consulta dos cálculos
+- Criado componente React `WorkHoursCalculator` para visualização dos cálculos
+- Checklist atualizado
+- Build e lint revisados
+
+### 5.2 - Implementar cálculo de horas extras (concluído)
+- Criada API `/api/salary/overtime-report` para relatório detalhado de horas extras
+- Criado componente React `OvertimeReport` para visualização do relatório
+- Implementado cálculo de horas extras por dia, semana e mês
+- Alertas automáticos quando excede limite legal (44h/mês)
+- Recomendações e avisos de compliance
+- Interface responsiva com detalhamento diário
+- Checklist atualizado
+- Build e lint revisados
+
+### 5.3 - Implementar cálculo de atrasos e faltas (concluído)
+- Criada API `/api/salary/absences-delays` para relatório de atrasos, saídas antecipadas e faltas
+- Criado componente React `AbsencesDelaysReport` para visualização do relatório
+- Implementado cálculo de atrasos (entrada após 8h) e saídas antecipadas (saída antes de 17h)
+- Identificação de faltas (dias sem entrada ou saída)
+- Interface responsiva com detalhamento diário e estatísticas
+- Cores diferenciadas para atrasos (vermelho), saídas antecipadas (amarelo) e faltas (laranja)
+- Checklist atualizado
+- Build e lint revisados
+
+### 5.4 - Implementar cálculo de salário proporcional (concluído)
+- Adicionadas interfaces e funções para cálculo de salário proporcional em `salary-calculations.ts`
+- Criada API `/api/salary/proportional` para cálculo de salário baseado em horas trabalhadas
+- Criado componente React `ProportionalSalaryCalculator` para visualização do cálculo
+- Implementado cálculo proporcional baseado em horas trabalhadas vs esperadas
+- Cálculo de adicionais (horas extras e adicional noturno) com taxas configuráveis
+- Cálculo de descontos por faltas, atrasos e saídas antecipadas
+- Interface responsiva com resumo principal e detalhamento de adicionais/descontos
+- Formatação monetária em Real (BRL) para todos os valores
+- Configurações flexíveis de salário base, taxas e descontos
+- Checklist atualizado
+- Build e lint revisados
+
+### 5.5 - Implementar gestão de banco de horas (concluído)
+- Adicionadas interfaces e função para cálculo de banco de horas em `salary-calculations.ts`
+- Criada API `/api/salary/work-time-bank` para cálculo e consulta do banco de horas mensal
+- Criado componente React `WorkTimeBankReport` para visualização do saldo, créditos e débitos
+- Cálculo de créditos (horas extras) e débitos (faltas, atrasos, saídas antecipadas) por dia
+- Saldo final do banco de horas com formatação amigável
+- Avisos automáticos para saldo negativo e acúmulo excessivo
+- Interface responsiva com detalhamento diário de créditos e débitos
+- Checklist atualizado
+- Build e lint revisados
+
+### 5.6 - Implementar API de cálculos unificada (concluído)
+- Criada a rota `/api/salary/summary` para retornar todos os cálculos salariais do funcionário no período (horas trabalhadas, extras, atrasos, faltas, salário proporcional e banco de horas) em uma única resposta.
+- Utiliza os utilitários já existentes para centralizar a lógica de cálculo e facilitar integrações com dashboards e folha de pagamento.
+- Checklist atualizado
+- Build e lint revisados
+
+### 5.6.1 - Criar componente React SalarySummary (concluído)
+- Criado componente React `SalarySummary` para exibir o resumo salarial unificado, consumindo a API `/api/salary/summary`.
+- Interface organizada em cards: cabeçalho com valores principais, horas trabalhadas, cálculo salarial e banco de horas.
+- Inclui badges coloridos, alertas para saldo negativo/elevado e design responsivo com TailwindCSS e Shadcn UI.
+- Checklist atualizado
+- Build e lint revisados
+
+### 5.7 - Implementar geração de folha de pagamento (concluído)
+- Criada a rota `/api/salary/payroll` para gerar a folha de pagamento consolidada de todos os funcionários ativos no período.
+- Utiliza os utilitários de cálculo existentes para processar registros de ponto e calcular salários proporcionais.
+- Criado componente React `PayrollReport` para exibir a folha consolidada com resumo geral e tabela detalhada por funcionário.
+- Interface inclui resumo com totais (funcionários, valor a pagar, horas extras, descontos) e tabela com detalhamento individual.
+- Alertas automáticos para saldo negativo no banco de horas e excesso de horas extras.
+- Checklist atualizado
+- Build e lint revisados
+
+### 5.8 - Implementar exportação para planilhas (concluído)
+- Adicionado botão de exportação CSV no componente `PayrollReport`.
+- Utiliza a biblioteca papaparse para gerar o arquivo CSV com todos os dados exibidos na tabela da folha de pagamento.
+- Exportação inclui cabeçalhos claros, valores formatados e compatibilidade com Excel.
+- Checklist atualizado
+- Build e lint revisados
+
+### 5.9 - Implementar histórico de pagamentos (concluído)
+- Criado modelo `Payment` no schema.prisma para registrar histórico de pagamentos (campos: funcionário, empresa, mês, valor, status, data de pagamento, referência da folha).
+- Migration aplicada com reset do banco de dados.
+- Criado endpoint `/api/salary/payments` para registrar (POST) e consultar (GET) pagamentos, com filtros por período, funcionário e status.
+- Criado componente React `PaymentHistory` para exibir histórico com filtros, estatísticas e tabela organizada.
+- Interface inclui resumo com totais (pagamentos, valores pagos/pendentes) e filtros por mês, funcionário e status.
+- Checklist atualizado
+- Build e lint revisados
+
+### 5.10 - Implementar configurações de cálculo (concluído)
+- Criado endpoint `/api/salary/config` para gerenciar configurações de cálculo salarial (GET para consultar, PUT para atualizar).
+- Criado componente React `SalaryConfig` para interface de configuração com formulário organizado em seções.
+- Configurações incluem: jornada de trabalho, descontos, horas extras, adicional noturno e outras regras.
+- Interface com validações, switches para opções booleanas e organização por categorias.
+- Checklist atualizado
+- Build e lint revisados
 
 ---

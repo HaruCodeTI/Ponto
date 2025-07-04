@@ -66,6 +66,11 @@
 
 ## 👤 Módulo de Funcionários
 
+### ✅ Layout e Navegação
+
+- [x] 3.0 Implementar Sidebar de navegação fixa e responsiva com links para: Dashboard, Bater Ponto, Funcionários, Empresa, Relatórios, Ajustes, Logs, Configurações, Sair
+
+
 ### ✅ Cadastro de Funcionário
 
 - [x] 3.1. Criar interface/types para Funcionário
@@ -102,9 +107,6 @@
 - [x] 4.10. Implementar autenticação biométrica (opcional)
 - [x] 4.11. Implementar comprovante de ponto imediato
 - [x] 4.12. Implementar histórico de ponto acessível via app
-
-### ✅ Validações e Segurança
-
 - [x] 4.13. Implementar validação de horário de trabalho
 - [x] 4.14. Implementar detecção de duplicação de ponto
 - [x] 4.15. Implementar validação de dispositivo
@@ -113,6 +115,7 @@
 - [x] 4.18. Implementar sistema de justificativas para ajustes
 - [x] 4.19. Implementar hash/código de verificação para cada registro
 - [x] 4.20. Implementar logs de falhas e sincronizações
+- [x] 4.21. Implementar sistema de backup e restauração
 
 ---
 
@@ -120,19 +123,20 @@
 
 ### ✅ Cálculos Automáticos
 
-- [ ] 5.1. Implementar cálculo de horas trabalhadas
-- [ ] 5.2. Implementar cálculo de horas extras
-- [ ] 5.3. Implementar cálculo de atrasos e faltas
-- [ ] 5.4. Implementar cálculo de salário proporcional
-- [ ] 5.5. Implementar gestão de banco de horas
-- [ ] 5.6. Criar API de cálculos
+- [x] 5.1. Implementar cálculo de horas trabalhadas
+- [x] 5.2. Implementar cálculo de horas extras
+- [x] 5.3. Implementar cálculo de atrasos e faltas
+- [x] 5.4. Implementar cálculo de salário proporcional
+- [x] 5.5. Implementar gestão de banco de horas
+- [x] 5.6. API de cálculos unificada (summary)
+- [x] 5.6.1. Criar componente React SalarySummary
+- [x] 5.7. Implementar geração de folha de pagamento
 
 ### ✅ Gestão de Pagamentos
 
-- [ ] 5.7. Implementar geração de folha de pagamento
-- [ ] 5.8. Implementar exportação para planilhas
-- [ ] 5.9. Implementar histórico de pagamentos
-- [ ] 5.10. Implementar configurações de cálculo
+- [x] 5.8. Implementar exportação para planilhas
+- [x] 5.9. Implementar histórico de pagamentos
+- [x] 5.10. Implementar configurações de cálculo
 
 ---
 
