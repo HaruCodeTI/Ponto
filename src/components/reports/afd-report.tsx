@@ -184,7 +184,7 @@ export function AFDReport({ companyId }: AFDReportProps) {
                   <SelectValue placeholder="Todos os funcionários" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os funcionários</SelectItem>
+                  <SelectItem value="__all">Todos os funcionários</SelectItem>
                   {employees.map((employee) => (
                     <SelectItem key={employee.id} value={employee.id}>
                       {employee.name} - {employee.position}
