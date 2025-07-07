@@ -38,4 +38,25 @@ export interface BiometricAuthEvent {
     userAgent: string;
     platform?: string;
   };
+}
+
+export interface BiometricData {
+  id: string;
+  employeeId: string;
+  type: 'FINGERPRINT' | 'FACE' | 'VOICE';
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface BiometricScanResult {
+  success: boolean;
+  employeeId?: string;
+  type?: string;
+  error?: string;
+}
+
+export interface BiometricSetup {
+  type: 'FINGERPRINT' | 'FACE' | 'VOICE';
+  employeeId: string;
 } 

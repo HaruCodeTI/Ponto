@@ -7,18 +7,21 @@
  */
 export interface NFCCard {
   id: string;
-  cardNumber: string; // Número único do crachá
-  employeeId: string; // ID do funcionário associado
-  companyId: string; // ID da empresa
-  status: 'ACTIVE' | 'INACTIVE' | 'BLOCKED' | 'EXPIRED';
-  issuedAt: string; // ISO string
-  expiresAt?: string; // ISO string (opcional)
-  lastUsedAt?: string; // ISO string
-  usageCount: number; // Contador de usos
-  maxUsageCount?: number; // Limite de usos (opcional)
-  permissions: NFCPermission[];
+  cardNumber: string;
+  employeeId: string;
+  isActive: boolean;
+  lastUsed?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  // Campos adicionais para funcionalidade completa (não no Prisma ainda)
+  companyId?: string;
+  status?: 'ACTIVE' | 'INACTIVE' | 'BLOCKED' | 'EXPIRED';
+  expiresAt?: Date;
+  maxUsageCount?: number;
+  usageCount?: number;
+  permissions?: NFCPermission[];
   metadata?: {
-    cardType: 'STANDARD' | 'VIP' | 'TEMPORARY';
+    cardType?: 'STANDARD' | 'VIP' | 'TEMPORARY';
     department?: string;
     role?: string;
   };
@@ -163,4 +166,16 @@ export interface NFCAuditLog {
   };
   details: string;
   metadata?: Record<string, unknown>;
+}
+
+export interface NFCScanResult {
+  success: boolean;
+  cardNumber?: string;
+  employeeId?: string;
+  error?: string;
+}
+
+export interface NFCSetup {
+  cardNumber: string;
+  employeeId: string;
 } 

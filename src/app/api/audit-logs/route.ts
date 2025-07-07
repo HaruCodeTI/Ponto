@@ -6,50 +6,41 @@ import {
 import { 
   TimeRecordAuditLog
 } from "@/types/time-record";
+import { requireRole } from '@/lib/auth-middleware';
+import { getAuditLogs } from '@/lib/authorization';
 
 /**
  * GET /api/audit-logs
  * Busca logs de auditoria com filtros
  */
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
+  // Verificar se é admin
+  const authCheck = await requireRole(request, ['ADMIN']);
+  if (authCheck) return authCheck;
+
   try {
-    // Por enquanto, retorna logs simulados
-    // Em produção, isso seria uma consulta ao banco de dados
-    const mockLogs: TimeRecordAuditLog[] = [
-      {
-        id: "1",
-        timestamp: new Date().toISOString(),
-        action: "TIME_RECORD_ATTEMPT",
-        status: "SUCCESS",
-        userId: "user1",
-        employeeId: "emp1",
-        companyId: "comp1",
-        deviceInfo: {
-          deviceId: "device1",
-          deviceType: "MOBILE",
-          userAgent: "Mozilla/5.0...",
-          platform: "iOS",
-          screenResolution: "375x667",
-          timezone: "America/Sao_Paulo",
-        },
-        details: "Registro de ponto realizado com sucesso",
-      }
-    ];
+    const { searchParams } = new URL(request.url);
+    
+    const filters = {
+      userId: searchParams.get('userId') || undefined,
+      action: searchParams.get('action') || undefined,
+      resource: searchParams.get('resource') || undefined,
+      startDate: searchParams.get('startDate') ? new Date(searchParams.get('startDate')!) : undefined,
+      endDate: searchParams.get('endDate') ? new Date(searchParams.get('endDate')!) : undefined,
+      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 100,
+    };
+
+    const logs = await getAuditLogs(filters);
 
     return NextResponse.json({
       success: true,
-      data: {
-        logs: mockLogs,
-        total: mockLogs.length,
-        limit: 100,
-        offset: 0,
-      },
+      data: logs,
+      total: logs.length,
     });
-
   } catch (error) {
     console.error('Erro ao buscar logs de auditoria:', error);
     return NextResponse.json(
-      { error: "Erro interno do servidor" },
+      { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }

@@ -7,6 +7,8 @@ import {
   BiometricAuthConfig,
   BiometricAuthResult,
 } from "@/types/biometric";
+import { prisma } from './prisma';
+import { BiometricData, BiometricScanResult } from '@/types/biometric';
 
 /**
  * Configuração padrão para autenticação biométrica
@@ -93,5 +95,165 @@ export async function authenticateBiometric(
         platform: navigator.platform,
       },
     };
+  }
+}
+
+/**
+ * Simula leitura biométrica
+ * Em produção, isso seria integrado com hardware real
+ */
+export function simulateBiometricScan(type: 'FINGERPRINT' | 'FACE' | 'VOICE'): string {
+  // Simula um ID único de biometria
+  const randomId = Math.random().toString(36).substring(2, 10).toUpperCase();
+  return `${type}-${randomId}`;
+}
+
+/**
+ * Valida tipo de biometria
+ */
+export function validateBiometricType(type: string): boolean {
+  return ['FINGERPRINT', 'FACE', 'VOICE'].includes(type);
+}
+
+/**
+ * Busca dados biométricos por tipo e ID
+ */
+export async function findBiometricData(employeeId: string, type: string): Promise<BiometricData | null> {
+  try {
+    const data = await prisma.biometricData.findFirst({
+      where: { 
+        employeeId,
+        type,
+        isActive: true
+      },
+    });
+
+    if (!data) return null;
+
+    return {
+      id: data.id,
+      employeeId: data.employeeId,
+      type: data.type as 'FINGERPRINT' | 'FACE' | 'VOICE',
+      isActive: data.isActive,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    };
+  } catch (error) {
+    console.error('Erro ao buscar dados biométricos:', error);
+    return null;
+  }
+}
+
+/**
+ * Processa scan biométrico
+ */
+export async function processBiometricScan(employeeId: string, type: string): Promise<BiometricScanResult> {
+  try {
+    // Valida tipo
+    if (!validateBiometricType(type)) {
+      return {
+        success: false,
+        error: 'Tipo de biometria inválido',
+      };
+    }
+
+    // Busca dados no banco
+    const data = await findBiometricData(employeeId, type);
+    
+    if (!data) {
+      return {
+        success: false,
+        error: 'Dados biométricos não encontrados',
+      };
+    }
+
+    if (!data.isActive) {
+      return {
+        success: false,
+        error: 'Biometria inativa',
+      };
+    }
+
+    return {
+      success: true,
+      employeeId: data.employeeId,
+      type: data.type,
+    };
+  } catch (error) {
+    console.error('Erro ao processar scan biométrico:', error);
+    return {
+      success: false,
+      error: 'Erro interno do sistema',
+    };
+  }
+}
+
+/**
+ * Cria novos dados biométricos
+ */
+export async function createBiometricData(employeeId: string, type: string): Promise<BiometricData | null> {
+  try {
+    if (!validateBiometricType(type)) {
+      throw new Error('Tipo de biometria inválido');
+    }
+
+    const data = await prisma.biometricData.create({
+      data: {
+        employeeId,
+        type,
+      },
+    });
+
+    return {
+      id: data.id,
+      employeeId: data.employeeId,
+      type: data.type as 'FINGERPRINT' | 'FACE' | 'VOICE',
+      isActive: data.isActive,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    };
+  } catch (error) {
+    console.error('Erro ao criar dados biométricos:', error);
+    return null;
+  }
+}
+
+/**
+ * Desativa dados biométricos
+ */
+export async function deactivateBiometricData(id: string): Promise<boolean> {
+  try {
+    await prisma.biometricData.update({
+      where: { id },
+      data: { isActive: false },
+    });
+    return true;
+  } catch (error) {
+    console.error('Erro ao desativar dados biométricos:', error);
+    return false;
+  }
+}
+
+/**
+ * Lista dados biométricos de um funcionário
+ */
+export async function listBiometricData(employeeId: string): Promise<BiometricData[]> {
+  try {
+    const data = await prisma.biometricData.findMany({
+      where: { employeeId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return data.map(item => ({
+      id: item.id,
+      employeeId: item.employeeId,
+      type: item.type as 'FINGERPRINT' | 'FACE' | 'VOICE',
+      isActive: item.isActive,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    }));
+  } catch (error) {
+    console.error('Erro ao listar dados biométricos:', error);
+    return [];
   }
 } 

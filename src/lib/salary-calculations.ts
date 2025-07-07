@@ -1,4 +1,6 @@
 import { TimeRecord } from "@/types/time-record";
+import { PlanConfig } from '@/types/company';
+import { getPlanConfig } from '@/content/plans';
 
 /**
  * Configurações para cálculo de horas trabalhadas
@@ -688,10 +690,10 @@ export function calculateProportionalSalary(
 /**
  * Formata valor monetário para exibição
  */
-export function formatCurrency(value: number): string {
+export function formatCurrency(value: number, currency: string = 'BRL'): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: 'BRL',
+    currency: currency
   }).format(value);
 }
 
@@ -789,4 +791,277 @@ export function formatWorkTimeBank(minutes: number): string {
   if (hours === 0) return `${sign}${mins}min`;
   if (mins === 0) return `${sign}${hours}h`;
   return `${sign}${hours}h ${mins}min`;
+}
+
+export interface EmployeeBilling {
+  employeeCount: number;
+  basePrice: number;
+  pricePerEmployee: number;
+  extraEmployees: number;
+  extraCost: number;
+  totalCost: number;
+  currency: string;
+  billingPeriod: 'monthly' | 'yearly';
+}
+
+export interface BillingBreakdown {
+  plan: PlanConfig;
+  billing: EmployeeBilling;
+  savings: {
+    monthly: number;
+    yearly: number;
+    percentage: number;
+  };
+  recommendations: string[];
+}
+
+/**
+ * Calcula a cobrança por funcionário para um plano específico
+ */
+export function calculateEmployeeBilling(
+  planId: string, 
+  employeeCount: number, 
+  billingPeriod: 'monthly' | 'yearly' = 'monthly'
+): EmployeeBilling {
+  const plan = getPlanConfig(planId);
+  if (!plan) {
+    return {
+      employeeCount: 0,
+      basePrice: 0,
+      pricePerEmployee: 0,
+      extraEmployees: 0,
+      extraCost: 0,
+      totalCost: 0,
+      currency: 'BRL',
+      billingPeriod
+    };
+  }
+
+  const basePrice = billingPeriod === 'monthly' 
+    ? plan.pricing.monthlyPrice 
+    : plan.pricing.yearlyPrice;
+  
+  const pricePerEmployee = plan.pricing.pricePerEmployee;
+  const maxEmployees = plan.features.maxEmployees;
+  const extraEmployees = Math.max(0, employeeCount - maxEmployees);
+  const extraCost = extraEmployees * pricePerEmployee * (billingPeriod === 'yearly' ? 12 : 1);
+  const totalCost = basePrice + extraCost;
+
+  return {
+    employeeCount,
+    basePrice,
+    pricePerEmployee,
+    extraEmployees,
+    extraCost,
+    totalCost,
+    currency: plan.pricing.currency,
+    billingPeriod
+  };
+}
+
+/**
+ * Calcula o custo por funcionário (média)
+ */
+export function calculateCostPerEmployee(billing: EmployeeBilling): number {
+  if (billing.employeeCount === 0) return 0;
+  return billing.totalCost / billing.employeeCount;
+}
+
+/**
+ * Compara custos entre planos para uma empresa
+ */
+export function comparePlanCosts(
+  employeeCount: number, 
+  billingPeriod: 'monthly' | 'yearly' = 'monthly'
+): BillingBreakdown[] {
+  const plans = ['BASIC', 'PROFESSIONAL', 'PREMIUM'];
+  const breakdowns: BillingBreakdown[] = [];
+
+  plans.forEach(planId => {
+    const plan = getPlanConfig(planId);
+    if (!plan) return;
+
+    const billing = calculateEmployeeBilling(planId, employeeCount, billingPeriod);
+    const recommendations: string[] = [];
+
+    // Análise de recomendações
+    if (employeeCount > plan.features.maxEmployees && plan.features.maxEmployees !== 999) {
+      recommendations.push(`Limite de funcionários excedido (${employeeCount}/${plan.features.maxEmployees})`);
+    }
+
+    if (employeeCount <= plan.features.maxEmployees) {
+      recommendations.push('Dentro do limite de funcionários');
+    }
+
+    if (billing.extraEmployees > 0) {
+      recommendations.push(`${billing.extraEmployees} funcionários extras (R$ ${billing.extraCost.toFixed(2)}/mês)`);
+    }
+
+    // Calcular economia vs plano anterior
+    const currentIndex = plans.indexOf(planId);
+    let savings = { monthly: 0, yearly: 0, percentage: 0 };
+
+    if (currentIndex > 0) {
+      const previousPlan = plans[currentIndex - 1];
+      const previousBilling = calculateEmployeeBilling(previousPlan, employeeCount, billingPeriod);
+      const monthlyDiff = previousBilling.totalCost - billing.totalCost;
+      const yearlyDiff = monthlyDiff * (billingPeriod === 'yearly' ? 1 : 12);
+      
+      savings = {
+        monthly: monthlyDiff,
+        yearly: yearlyDiff,
+        percentage: previousBilling.totalCost > 0 ? (monthlyDiff / previousBilling.totalCost) * 100 : 0
+      };
+    }
+
+    breakdowns.push({
+      plan,
+      billing,
+      savings,
+      recommendations
+    });
+  });
+
+  return breakdowns;
+}
+
+/**
+ * Encontra o plano mais econômico para uma empresa
+ */
+export function findMostEconomicalPlan(
+  employeeCount: number, 
+  billingPeriod: 'monthly' | 'yearly' = 'monthly'
+): BillingBreakdown | null {
+  const breakdowns = comparePlanCosts(employeeCount, billingPeriod);
+  
+  if (breakdowns.length === 0) return null;
+
+  return breakdowns.reduce((mostEconomical, current) => {
+    return current.billing.totalCost < mostEconomical.billing.totalCost ? current : mostEconomical;
+  });
+}
+
+/**
+ * Calcula economia anual ao fazer upgrade de plano
+ */
+export function calculateAnnualSavings(
+  currentPlanId: string,
+  targetPlanId: string,
+  employeeCount: number
+): number {
+  const currentBilling = calculateEmployeeBilling(currentPlanId, employeeCount, 'yearly');
+  const targetBilling = calculateEmployeeBilling(targetPlanId, employeeCount, 'yearly');
+  
+  return currentBilling.totalCost - targetBilling.totalCost;
+}
+
+/**
+ * Verifica se um plano é viável para uma empresa
+ */
+export function isPlanViable(
+  planId: string, 
+  employeeCount: number, 
+  budget: number
+): { viable: boolean; reason: string; cost: number } {
+  const billing = calculateEmployeeBilling(planId, employeeCount, 'monthly');
+  const viable = billing.totalCost <= budget;
+  
+  let reason = '';
+  if (!viable) {
+    reason = `Custo mensal (R$ ${billing.totalCost.toFixed(2)}) excede o orçamento (R$ ${budget.toFixed(2)})`;
+  } else if (billing.extraEmployees > 0) {
+    reason = `Plano viável com ${billing.extraEmployees} funcionários extras`;
+  } else {
+    reason = 'Plano viável dentro do orçamento';
+  }
+
+  return {
+    viable,
+    reason,
+    cost: billing.totalCost
+  };
+}
+
+/**
+ * Gera relatório de custos detalhado
+ */
+export function generateBillingReport(
+  employeeCount: number,
+  billingPeriod: 'monthly' | 'yearly' = 'monthly'
+): {
+  summary: {
+    employeeCount: number;
+    billingPeriod: string;
+    totalCost: number;
+    costPerEmployee: number;
+  };
+  breakdowns: BillingBreakdown[];
+  recommendations: {
+    mostEconomical: BillingBreakdown | null;
+    bestValue: BillingBreakdown | null;
+    warnings: string[];
+  };
+} {
+  const breakdowns = comparePlanCosts(employeeCount, billingPeriod);
+  const mostEconomical = findMostEconomicalPlan(employeeCount, billingPeriod);
+  
+  // Encontrar melhor custo-benefício (considerando funcionalidades)
+  const bestValue = breakdowns.reduce((best, current) => {
+    const currentValue = current.plan.features.biometricAuth ? 1 : 0;
+    const currentValue2 = current.plan.features.advancedReports ? 1 : 0;
+    const currentValue3 = current.plan.features.apiAccess ? 1 : 0;
+    const currentTotal = currentValue + currentValue2 + currentValue3;
+    
+    const bestValue = best.plan.features.biometricAuth ? 1 : 0;
+    const bestValue2 = best.plan.features.advancedReports ? 1 : 0;
+    const bestValue3 = best.plan.features.apiAccess ? 1 : 0;
+    const bestTotal = bestValue + bestValue2 + bestValue3;
+    
+    if (currentTotal > bestTotal) return current;
+    if (currentTotal === bestTotal && current.billing.totalCost < best.billing.totalCost) return current;
+    return best;
+  });
+
+  const warnings: string[] = [];
+  
+  // Verificar se algum plano tem custo muito alto
+  breakdowns.forEach(breakdown => {
+    const costPerEmployee = calculateCostPerEmployee(breakdown.billing);
+    if (costPerEmployee > 50) {
+      warnings.push(`Custo por funcionário alto no plano ${breakdown.plan.name}: R$ ${costPerEmployee.toFixed(2)}`);
+    }
+  });
+
+  // Verificar se há muitos funcionários extras
+  breakdowns.forEach(breakdown => {
+    if (breakdown.billing.extraEmployees > 10) {
+      warnings.push(`Muitos funcionários extras no plano ${breakdown.plan.name}: ${breakdown.billing.extraEmployees}`);
+    }
+  });
+
+  const summary = {
+    employeeCount,
+    billingPeriod: billingPeriod === 'monthly' ? 'Mensal' : 'Anual',
+    totalCost: mostEconomical?.billing.totalCost || 0,
+    costPerEmployee: mostEconomical ? calculateCostPerEmployee(mostEconomical.billing) : 0
+  };
+
+  return {
+    summary,
+    breakdowns,
+    recommendations: {
+      mostEconomical,
+      bestValue,
+      warnings
+    }
+  };
+}
+
+/**
+ * Calcula desconto para pagamento anual
+ */
+export function calculateAnnualDiscount(monthlyPrice: number, yearlyPrice: number): number {
+  const monthlyTotal = monthlyPrice * 12;
+  const discount = ((monthlyTotal - yearlyPrice) / monthlyTotal) * 100;
+  return Math.round(discount);
 } 

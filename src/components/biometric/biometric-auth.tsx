@@ -1,291 +1,158 @@
 "use client";
-import React, { useState, useCallback, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
-import { 
-  BiometricMethod,
-  BiometricAuthConfig, 
-  BiometricAuthResult 
-} from "@/types/biometric";
-import { 
-  authenticateBiometric, 
-  isBiometricSupported, 
-  detectBiometricMethod,
-  DEFAULT_BIOMETRIC_CONFIG 
-} from "@/lib/biometric";
-import { 
-  Fingerprint, 
-  User, 
-  Clock, 
-  Shield, 
-  AlertTriangle, 
-  CheckCircle, 
-  XCircle,
-  Smartphone,
-  Monitor
-} from "lucide-react";
+
+import { Loader2, Fingerprint, Eye, Mic, CheckCircle, XCircle } from "lucide-react";
+import { simulateBiometricScan } from "@/lib/biometric";
+import { toast } from "sonner";
 
 interface BiometricAuthProps {
-  config?: BiometricAuthConfig;
-  onAuthentication?: (result: BiometricAuthResult) => void;
-  onError?: (error: string) => void;
+  employeeId: string;
+  onAuthSuccess?: (result: { success: boolean; employeeId?: string; type?: string; message?: string; error?: string }) => void;
+  onAuthError?: (error: string) => void;
+  className?: string;
 }
 
-export function BiometricAuth({
-  config = DEFAULT_BIOMETRIC_CONFIG,
-  onAuthentication,
-  onError,
+const BIOMETRIC_TYPES = [
+  { type: 'FINGERPRINT', label: 'Digital', icon: Fingerprint, color: 'text-blue-600' },
+  { type: 'FACE', label: 'Reconhecimento Facial', icon: Eye, color: 'text-green-600' },
+  { type: 'VOICE', label: 'Voz', icon: Mic, color: 'text-purple-600' },
+] as const;
+
+export function BiometricAuth({ 
+  employeeId, 
+  onAuthSuccess, 
+  onAuthError,
+  className = "" 
 }: BiometricAuthProps) {
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [authResult, setAuthResult] = useState<BiometricAuthResult | null>(null);
-  const [progress, setProgress] = useState(0);
+  const [isScanning, setIsScanning] = useState(false);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [scanResult, setScanResult] = useState<{ success: boolean; employeeId?: string; type?: string; message?: string; error?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isSupported, setIsSupported] = useState(false);
-  const [detectedMethod, setDetectedMethod] = useState<BiometricMethod>('UNKNOWN');
 
-  useEffect(() => {
-    setIsSupported(isBiometricSupported());
-    setDetectedMethod(detectBiometricMethod());
-  }, []);
-
-  const handleAuthenticate = useCallback(async () => {
-    if (!isSupported) {
-      const errorMsg = "Biometria não suportada neste dispositivo";
-      setError(errorMsg);
-      onError?.(errorMsg);
-      return;
-    }
-
-    setIsAuthenticating(true);
-    setProgress(0);
+  const handleScan = async (type: string) => {
+    setIsScanning(true);
     setError(null);
-    setAuthResult(null);
+    setSelectedType(type);
 
     try {
-      // Simula progresso de autenticação
-      const progressInterval = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 15;
-        });
-      }, 200);
-
-      // Autentica biométricamente
-      const result = await authenticateBiometric(config);
+      // Simula delay de leitura
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      clearInterval(progressInterval);
-      setProgress(100);
-      
-      setAuthResult(result);
-      onAuthentication?.(result);
+      simulateBiometricScan(type as any);
 
-      if (!result.success) {
+      // Processa o scan
+      const response = await fetch("/api/auth/biometric/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId, type }),
+      });
+
+      const result = await response.json();
+      setScanResult(result);
+
+      if (result.success) {
+        toast.success("Autenticação biométrica realizada com sucesso!");
+        onAuthSuccess?.(result);
+      } else {
         setError(result.error || "Erro na autenticação biométrica");
-        onError?.(result.error || "Erro na autenticação biométrica");
+        toast.error(result.error || "Erro na autenticação biométrica");
+        onAuthError?.(result.error || "Erro na autenticação biométrica");
       }
-
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
-      setError(errorMessage);
-      onError?.(errorMessage);
+    } catch {
+      const errorMsg = "Erro de conexão";
+      setError(errorMsg);
+      toast.error(errorMsg);
+      onAuthError?.(errorMsg);
     } finally {
-      setIsAuthenticating(false);
-      setTimeout(() => setProgress(0), 2000);
-    }
-  }, [isSupported, config, onAuthentication, onError]);
-
-  const getMethodIcon = (method: BiometricMethod) => {
-    switch (method) {
-      case 'FINGERPRINT':
-        return <Fingerprint className="h-5 w-5" />;
-      case 'FACE':
-        return <User className="h-5 w-5" />;
-      case 'WEBAUTHN':
-        return <Shield className="h-5 w-5" />;
-      case 'PIN':
-        return <Clock className="h-5 w-5" />;
-      default:
-        return <Smartphone className="h-5 w-5" />;
+      setIsScanning(false);
     }
   };
-
-  const getMethodName = (method: BiometricMethod) => {
-    switch (method) {
-      case 'FINGERPRINT':
-        return "Digital";
-      case 'FACE':
-        return "Face ID";
-      case 'WEBAUTHN':
-        return "WebAuthn";
-      case 'PIN':
-        return "PIN";
-      default:
-        return "Biometria";
-    }
-  };
-
-  const getStatusIcon = () => {
-    if (error) return <XCircle className="h-6 w-6 text-red-500" />;
-    if (authResult?.success) return <CheckCircle className="h-6 w-6 text-green-500" />;
-    if (isAuthenticating) return <Fingerprint className="h-6 w-6 text-blue-500 animate-pulse" />;
-    return <Shield className="h-6 w-6 text-gray-400" />;
-  };
-
-  const getStatusText = () => {
-    if (error) return "Erro na autenticação";
-    if (authResult?.success) return "Autenticado com sucesso";
-    if (isAuthenticating) return "Autenticando...";
-    return "Aguardando autenticação";
-  };
-
-  const getStatusColor = () => {
-    if (error) return "text-red-600";
-    if (authResult?.success) return "text-green-600";
-    if (isAuthenticating) return "text-blue-600";
-    return "text-gray-500";
-  };
-
-  if (!isSupported) {
-    return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <Fingerprint className="h-5 w-5 mr-2" />
-            Autenticação Biométrica
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              Biometria não suportada neste dispositivo. Use um dispositivo móvel ou computador com suporte a WebAuthn.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-4">
-      {/* Status Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            {getStatusIcon()}
-            <span className={`ml-2 ${getStatusColor()}`}>
-              {getStatusText()}
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isAuthenticating && (
-            <div className="space-y-2">
-              <Progress value={progress} className="w-full" />
-              <p className="text-sm text-gray-600 text-center">
-                Use {getMethodName(detectedMethod)} para autenticar...
-              </p>
-            </div>
-          )}
-          
-          <Button
-            onClick={handleAuthenticate}
-            disabled={isAuthenticating}
-            className="w-full mt-4"
-            size="lg"
-          >
-            {isAuthenticating ? "Autenticando..." : `Autenticar com ${getMethodName(detectedMethod)}`}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Error Display */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Authentication Result */}
-      {authResult && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              {authResult.success ? (
-                <CheckCircle className="h-5 w-5 mr-2 text-green-500" />
-              ) : (
-                <XCircle className="h-5 w-5 mr-2 text-red-500" />
+    <Card className={className}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Fingerprint className="w-5 h-5" />
+          Autenticação Biométrica
+        </CardTitle>
+        <CardDescription>
+          Escolha o método de autenticação biométrica
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {BIOMETRIC_TYPES.map(({ type, label, icon: Icon, color }) => (
+            <Button
+              key={type}
+              variant="outline"
+              className={`h-20 flex flex-col items-center justify-center gap-2 ${
+                selectedType === type && isScanning ? 'border-blue-500 bg-blue-50' : ''
+              }`}
+              onClick={() => handleScan(type)}
+              disabled={isScanning}
+            >
+              <Icon className={`w-6 h-6 ${color}`} />
+              <span className="text-sm">{label}</span>
+              {isScanning && selectedType === type && (
+                <Loader2 className="w-4 h-4 animate-spin" />
               )}
-              Resultado da Autenticação
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {authResult.success ? (
-              <>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Método:</span>
-                  <Badge variant="outline" className="flex items-center">
-                    {getMethodIcon(authResult.method)}
-                    <span className="ml-1">{getMethodName(authResult.method)}</span>
-                  </Badge>
-                </div>
-                
-                {authResult.deviceInfo && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Dispositivo:</span>
-                      <span className="text-sm font-medium flex items-center">
-                        {authResult.deviceInfo.deviceType === 'MOBILE' ? (
-                          <Smartphone className="h-3 w-3 mr-1" />
-                        ) : (
-                          <Monitor className="h-3 w-3 mr-1" />
-                        )}
-                        {authResult.deviceInfo.deviceType}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">ID:</span>
-                      <span className="text-xs font-mono text-gray-500">
-                        {authResult.deviceInfo.deviceId}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                
-                {authResult.credentialId && (
-                  <div className="pt-2 border-t">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Credencial:</span>
-                      <span className="text-xs font-mono text-gray-500">
-                        {authResult.credentialId.substring(0, 8)}...
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <Alert variant="destructive">
-                <AlertDescription>{authResult.error}</AlertDescription>
-              </Alert>
-            )}
+            </Button>
+          ))}
+        </div>
 
-            {authResult.warnings && authResult.warnings.length > 0 && (
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  {authResult.warnings.join(", ")}
-                </AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
+        {isScanning && (
+          <div className="text-center py-4">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm text-gray-600">
+                Processando {selectedType?.toLowerCase()}...
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+            </div>
+          </div>
+        )}
+
+        {scanResult && (
+          <Alert variant={scanResult.success ? "default" : "destructive"}>
+            <div className="flex items-center gap-2">
+              {scanResult.success ? (
+                <CheckCircle className="h-4 w-4" />
+              ) : (
+                <XCircle className="h-4 w-4" />
+              )}
+              <AlertDescription>
+                {scanResult.success ? (
+                  <>
+                    <strong>Sucesso!</strong> {scanResult.message}
+                    <div className="mt-1 text-sm">
+                      Tipo: {scanResult.type} | Funcionário ID: {scanResult.employeeId}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <strong>Erro:</strong> {scanResult.error}
+                  </>
+                )}
+              </AlertDescription>
+            </div>
+          </Alert>
+        )}
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="text-xs text-gray-500 text-center">
+          <p>Esta é uma simulação. Em produção, seria integrado com hardware biométrico real.</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 } 

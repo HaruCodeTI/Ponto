@@ -10,6 +10,13 @@ import {
 import { 
   generateSimpleHash
 } from "@/lib/hash-verification";
+// import { 
+//   generateRecordHash, 
+//   generateIntegrityHash, 
+//   generateIntegrityTimestamp,
+//   validateRecordData,
+//   type ImmutableRecordData 
+// } from "@/lib/immutable-records";
 
 export async function POST(req: NextRequest): Promise<NextResponse<TimeRecordResponse>> {
   try {
@@ -21,6 +28,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<TimeRecordRes
     }
 
     const timestamp = new Date();
+    
+    // Geração do hash básico (será expandido para imutabilidade)
     const hash = generateSimpleHash((data as unknown) as Record<string, unknown>, timestamp);
 
     // Busca registros do mesmo funcionário no dia
@@ -50,6 +59,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<TimeRecordRes
       deviceInfo: rec.deviceInfo ?? undefined,
       photoUrl: rec.photoUrl ?? undefined,
       nfcTag: rec.nfcTag ?? undefined,
+      integrityHash: "temp", // Temporário até migração
+      integrityTimestamp: new Date().toISOString(), // Temporário até migração
     }));
 
     // Monta registro simulado para detecção
@@ -64,6 +75,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<TimeRecordRes
       photoUrl: data.photoUrl,
       nfcTag: data.nfcTag,
       hash,
+      integrityHash: "temp", // Temporário até migração
+      integrityTimestamp: new Date().toISOString(), // Temporário até migração
       createdAt: timestamp.toISOString(),
       userId: data.userId,
       employeeId: data.employeeId,
@@ -138,6 +151,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<TimeRecordRes
       deviceInfo: timeRecord.deviceInfo ?? undefined,
       photoUrl: timeRecord.photoUrl ?? undefined,
       nfcTag: timeRecord.nfcTag ?? undefined,
+      integrityHash: "temp", // Temporário até migração
+      integrityTimestamp: new Date().toISOString(), // Temporário até migração
     };
 
     // Enviar notificação de sucesso

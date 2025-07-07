@@ -1,0 +1,56 @@
+import { NextRequest, NextResponse } from "next/server";
+import { approveTimeRecordAdjustment } from "@/lib/time-record-adjustments";
+import { ApproveAdjustmentData } from "@/types/time-record";
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const data = (await req.json()) as Omit<ApproveAdjustmentData, 'adjustmentId'>;
+    
+    // Validação básica
+    if (!data.approvedBy || !data.approvalStatus) {
+      return NextResponse.json(
+        { success: false, error: "Dados obrigatórios faltando" },
+        { status: 400 }
+      );
+    }
+
+    // Validar status
+    if (!['APPROVED', 'REJECTED'].includes(data.approvalStatus)) {
+      return NextResponse.json(
+        { success: false, error: "Status de aprovação inválido" },
+        { status: 400 }
+      );
+    }
+
+    const approvalData: ApproveAdjustmentData = {
+      adjustmentId: params.id,
+      approvedBy: data.approvedBy,
+      approvalStatus: data.approvalStatus,
+      approvalNotes: data.approvalNotes,
+    };
+
+    // Aprovar ajuste
+    const result = await approveTimeRecordAdjustment(approvalData);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { success: true, data: result.adjustment },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Erro ao aprovar ajuste:", error);
+    return NextResponse.json(
+      { success: false, error: "Erro interno do servidor" },
+      { status: 500 }
+    );
+  }
+} 

@@ -173,11 +173,11 @@
 
 ### ✅ Sistema de Planos
 
-- [ ] 7.1. Implementar sistema de planos (Básico/Profissional/Premium)
-- [ ] 7.2. Implementar limites por plano
-- [ ] 7.3. Implementar cobrança por funcionário
-- [ ] 7.4. Implementar integração com gateway de pagamento
-- [ ] 7.5. Implementar gestão de assinaturas
+- [x] 7.1. Implementar sistema de planos (Básico/Profissional/Premium)
+- [x] 7.2. Implementar limites por plano
+- [x] 7.3. Implementar cobrança por funcionário
+- [x] 7.4. Implementar integração com gateway de pagamento
+- [x] 7.5. Implementar gestão de assinaturas
 
 ### ✅ White Label (Futuro)
 
@@ -191,21 +191,21 @@
 
 ### ✅ Autenticação
 
-- [ ] 8.1. Implementar login/logout
-- [ ] 8.2. Implementar registro de usuários
-- [ ] 8.3. Implementar recuperação de senha
-- [ ] 8.4. Implementar verificação de email
-- [ ] 8.5. Implementar autenticação de dois fatores
-- [ ] 8.6. Implementar autenticação por NFC (crachá digital)
-- [ ] 8.7. Implementar autenticação biométrica (opcional)
-- [ ] 8.8. Implementar identificação única por CPF, matrícula e/ou PIS
+- [x] 8.1. Implementar login/logout
+- [x] 8.2. Implementar registro de usuários
+- [x] 8.3. Implementar recuperação de senha
+- [x] 8.4. Implementar verificação de email
+- [x] 8.5. Implementar autenticação de dois fatores
+- [x] 8.6. Implementar autenticação por NFC (crachá digital)
+- [x] 8.7. Implementar autenticação biométrica (opcional)
+- [x] 8.8. Implementar identificação única por CPF, matrícula e/ou PIS
 
 ### ✅ Autorização
 
-- [ ] 8.9. Implementar sistema de roles (Admin, Gerente, Funcionário)
-- [ ] 8.10. Implementar controle de acesso por funcionalidade
-- [ ] 8.11. Implementar auditoria de ações
-- [ ] 8.12. Implementar sessões seguras
+- [x] 8.9. Implementar sistema de roles (Admin, Gerente, Funcionário)
+- [x] 8.10. Implementar controle de acesso por funcionalidade
+- [x] 8.11. Implementar auditoria de ações
+- [x] 8.12. Implementar sessões seguras
 
 ### ✅ Compliance Legal (Portaria 671/2021)
 

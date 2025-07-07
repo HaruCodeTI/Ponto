@@ -48,6 +48,8 @@ model User {
   image         String?
   password      String?
   role          UserRole  @default(EMPLOYEE)
+  twoFactorSecret String? // Secret para 2FA
+  twoFactorEnabled Boolean @default(false) // Se 2FA está ativo
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -57,6 +59,7 @@ model User {
   companyId   String?
   employee    Employee?
   timeRecords TimeRecord[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model VerificationToken {
@@ -87,11 +90,14 @@ model Company {
   reportSchedules ReportSchedule[]
   reportFormatConfigs ReportFormatConfig[]
   advancedReportSchedules AdvancedReportSchedule[]
+  subscriptions Subscription[]
 }
 
 model Employee {
   id               String       @id @default(cuid())
   cpf              String       @unique
+  registration     String?      @unique // Matrícula
+  pis              String?      @unique // PIS
   position         String
   salary           Float
   workSchedule     WorkSchedule @default(PRESENCIAL)
@@ -106,6 +112,12 @@ model Employee {
   companyId   String
   timeRecords TimeRecord[]
   payments    Payment[]
+  nfcCards    NFCCard[]
+  biometricData BiometricData[]
+
+  @@index([cpf])
+  @@index([registration])
+  @@index([pis])
 }
 
 model TimeRecord {
@@ -119,6 +131,8 @@ model TimeRecord {
   photoUrl   String?
   nfcTag     String?
   hash       String     @unique // Para garantir imutabilidade
+  integrityHash String  // Hash de integridade imutável
+  integrityTimestamp DateTime // Timestamp criptográfico
   createdAt  DateTime   @default(now())
 
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -127,6 +141,45 @@ model TimeRecord {
   employeeId String
   company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   companyId  String
+
+  // Relacionamento com ajustes
+  adjustments TimeRecordAdjustment[]
+}
+
+model TimeRecordAdjustment {
+  id                String   @id @default(cuid())
+  originalRecordId  String   // ID do registro original
+  originalRecord    TimeRecord @relation(fields: [originalRecordId], references: [id], onDelete: Cascade)
+  
+  // Dados do ajuste
+  adjustedTimestamp DateTime // Novo timestamp
+  adjustedType      RecordType? // Novo tipo (se aplicável)
+  reason            String   // Justificativa obrigatória
+  evidence          String?  // URL de evidência (documento, foto, etc.)
+  
+  // Aprovação
+  approvedBy        String   // ID do usuário que aprovou
+  approvedAt        DateTime @default(now())
+  approvalStatus    AdjustmentStatus @default(PENDING)
+  
+  // Auditoria
+  requestedBy       String   // ID do usuário que solicitou
+  requestedAt       DateTime @default(now())
+  companyId         String   // Empresa do registro
+  
+  // Campos de compliance
+  complianceReason  String?  // Motivo específico de compliance
+  legalBasis        String?  // Base legal para o ajuste
+  retentionPeriod   Int      @default(1825) // 5 anos em dias
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([originalRecordId])
+  @@index([companyId])
+  @@index([requestedBy])
+  @@index([approvedBy])
+  @@index([approvalStatus])
 }
 
 model Payment {
@@ -194,6 +247,255 @@ model AdvancedReportSchedule {
   @@unique([companyId, reportType])
 }
 
+model Subscription {
+  id                   String            @id @default(cuid())
+  company              Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId            String
+  plan                 Plan
+  status               SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  trialEnd             DateTime?
+  cancelAtPeriodEnd    Boolean           @default(false)
+  employeeCount        Int
+  monthlyAmount        Float
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@index([companyId, status])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model NFCCard {
+  id         String   @id @default(cuid())
+  cardNumber String   @unique
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId String
+  isActive   Boolean  @default(true)
+  lastUsed   DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([cardNumber])
+  @@index([employeeId])
+}
+
+model BiometricData {
+  id         String   @id @default(cuid())
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId String
+  type       String   // FINGERPRINT, FACE, VOICE
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([type])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  userEmail  String
+  action     String
+  resource   String
+  resourceId String?
+  details    String?
+  ipAddress  String?
+  userAgent  String?
+  timestamp  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([timestamp])
+}
+
+model SystemLog {
+  id          String   @id @default(cuid())
+  timestamp   DateTime @default(now())
+  level       LogLevel
+  category    LogCategory
+  action      String   // Ação realizada
+  status      LogStatus
+  
+  // Contexto do usuário
+  userId      String?
+  employeeId  String?
+  companyId   String?
+  
+  // Informações do dispositivo
+  deviceType  DeviceType
+  userAgent   String?
+  ipAddress   String?
+  platform    String?
+  isOnline    Boolean  @default(true)
+  
+  // Detalhes da operação
+  details     String   // Descrição detalhada
+  errorMessage String? // Mensagem de erro (se aplicável)
+  stackTrace  String?  // Stack trace (se aplicável)
+  
+  // Dados da operação
+  operationData Json?  // Dados da operação em JSON
+  metadata     Json?   // Metadados adicionais
+  
+  // Performance
+  duration    Int?     // Duração em milissegundos
+  memoryUsage Int?     // Uso de memória em MB
+  
+  // Sincronização
+  syncId      String?  // ID da sincronização relacionada
+  retryCount  Int      @default(0)
+  maxRetries  Int      @default(3)
+  
+  // Compliance
+  retentionPeriod Int  @default(1825) // 5 anos em dias
+  isComplianceRequired Boolean @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([timestamp])
+  @@index([level])
+  @@index([category])
+  @@index([status])
+  @@index([userId])
+  @@index([employeeId])
+  @@index([companyId])
+  @@index([deviceType])
+  @@index([syncId])
+}
+
+model SyncLog {
+  id          String   @id @default(cuid())
+  timestamp   DateTime @default(now())
+  syncType    SyncType
+  status      SyncStatus
+  entityType  EntityType
+  entityId    String?
+  
+  // Contexto do usuário
+  userId      String?
+  employeeId  String?
+  companyId   String?
+  
+  // Informações do dispositivo
+  deviceType  DeviceType
+  userAgent   String?
+  ipAddress   String?
+  platform    String?
+  connectionType String?
+  isOnline    Boolean  @default(true)
+  
+  // Dados da sincronização
+  recordsCount    Int     @default(0)
+  bytesTransferred Int    @default(0)
+  startTime       DateTime
+  endTime         DateTime?
+  duration        Int?     // Duração em milissegundos
+  
+  // Conflitos e erros
+  conflictsCount  Int     @default(0)
+  duplicatesCount Int     @default(0)
+  errorsCount     Int     @default(0)
+  
+  // Detalhes dos conflitos
+  conflicts       Json?   // Array de conflitos
+  errors          Json?   // Array de erros
+  
+  // Metadados da sincronização
+  syncVersion     String  @default("1.0")
+  protocol        String  @default("REST")
+  compression     Boolean @default(false)
+  encryption      Boolean @default(true)
+  batchSize       Int     @default(100)
+  retryCount      Int     @default(0)
+  maxRetries      Int     @default(3)
+  tags            String[] // Tags para categorização
+  
+  // Compliance
+  retentionPeriod Int     @default(1825) // 5 anos em dias
+  isComplianceRequired Boolean @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([timestamp])
+  @@index([syncType])
+  @@index([status])
+  @@index([entityType])
+  @@index([userId])
+  @@index([employeeId])
+  @@index([companyId])
+  @@index([deviceType])
+}
+
+model UsageLog {
+  id          String   @id @default(cuid())
+  timestamp   DateTime @default(now())
+  action      String   // Ação realizada
+  resource    String   // Recurso acessado
+  resourceId  String?  // ID do recurso específico
+  
+  // Contexto do usuário
+  userId      String
+  employeeId  String?
+  companyId   String
+  
+  // Informações da sessão
+  sessionId   String?
+  requestId   String?
+  
+  // Informações do dispositivo
+  deviceType  DeviceType
+  userAgent   String?
+  ipAddress   String?
+  platform    String?
+  isOnline    Boolean  @default(true)
+  
+  // Detalhes da operação
+  method      String?  // Método HTTP (se aplicável)
+  endpoint    String?  // Endpoint acessado (se aplicável)
+  statusCode  Int?     // Código de status (se aplicável)
+  responseTime Int?    // Tempo de resposta em ms
+  
+  // Dados da operação
+  requestData Json?    // Dados da requisição
+  responseData Json?   // Dados da resposta
+  metadata    Json?    // Metadados adicionais
+  
+  // Performance
+  duration    Int?     // Duração em milissegundos
+  memoryUsage Int?     // Uso de memória em MB
+  
+  // Compliance
+  retentionPeriod Int  @default(1825) // 5 anos em dias
+  isComplianceRequired Boolean @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([timestamp])
+  @@index([action])
+  @@index([resource])
+  @@index([userId])
+  @@index([employeeId])
+  @@index([companyId])
+  @@index([deviceType])
+  @@index([sessionId])
+  @@index([method])
+  @@index([statusCode])
+}
+
 enum UserRole {
   ADMIN
   MANAGER
@@ -242,4 +544,315 @@ enum ReportFormat {
   EXCEL
   CSV
   BOTH
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIAL
+  EXPIRED
+}
+
+enum AdjustmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum LogCategory {
+  AUTHENTICATION
+  AUTHORIZATION
+  TIME_RECORD
+  EMPLOYEE
+  COMPANY
+  SYSTEM
+  NETWORK
+  DATABASE
+  VALIDATION
+  NOTIFICATION
+  BACKUP
+  SYNC
+  SECURITY
+  PERFORMANCE
+  COMPLIANCE
+  OTHER
+}
+
+enum LogStatus {
+  SUCCESS
+  FAILED
+  PENDING
+  IN_PROGRESS
+  CANCELLED
+  TIMEOUT
+  RETRY
+}
+
+enum SyncType {
+  PUSH
+  PULL
+  BIDIRECTIONAL
+  BATCH
+  REALTIME
+  BACKUP
+  RESTORE
+}
+
+enum SyncStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+  RETRY
+  CANCELLED
+  CONFLICT
+}
+
+enum EntityType {
+  TIME_RECORD
+  EMPLOYEE
+  COMPANY
+  NOTIFICATION
+  AUDIT_LOG
+  SYSTEM_LOG
+  BACKUP
+  CONFIGURATION
+}
+
+enum DeviceType {
+  MOBILE
+  DESKTOP
+  TABLET
+  TERMINAL
+  UNKNOWN
+}
+
+model DataRedundancy {
+  id          String   @id @default(cuid())
+  timestamp   DateTime @default(now())
+  entityType  String   // Tipo de entidade (TimeRecord, SystemLog, etc.)
+  entityId    String   // ID da entidade
+  operation   String   // CREATE, UPDATE, DELETE
+  status      RedundancyStatus
+  
+  // Dados da entidade
+  entityData  Json     // Dados completos da entidade
+  hash        String   // Hash dos dados para verificação de integridade
+  
+  // Informações de redundância
+  primaryStorage   String   // Localização do armazenamento primário
+  backupStorage    String   // Localização do backup
+  replicationCount Int      @default(1) // Número de réplicas criadas
+  
+  // Status de cada réplica
+  replicas         Json     // Array com status de cada réplica
+  verificationHash String   // Hash para verificação de integridade
+  
+  // Metadados
+  companyId        String   // Empresa relacionada
+  userId           String?  // Usuário que realizou a operação
+  sessionId        String?  // Sessão da operação
+  
+  // Compliance
+  retentionPeriod  Int      @default(1825) // 5 anos em dias
+  isComplianceRequired Boolean @default(true)
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([timestamp])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([status])
+  @@index([companyId])
+}
+
+model DataIntegrityCheck {
+  id          String   @id @default(cuid())
+  timestamp   DateTime @default(now())
+  checkType   IntegrityCheckType
+  status      IntegrityCheckStatus
+  
+  // Escopo da verificação
+  entityType  String?  // Tipo de entidade (opcional para verificações gerais)
+  entityId    String?  // ID da entidade (opcional)
+  dateRange   Json?    // Período verificado {startDate, endDate}
+  
+  // Resultados
+  totalRecords    Int     @default(0)
+  verifiedRecords Int     @default(0)
+  corruptedRecords Int    @default(0)
+  missingRecords  Int     @default(0)
+  
+  // Detalhes dos problemas
+  issues          Json?   // Array com detalhes dos problemas encontrados
+  fixes           Json?   // Array com correções aplicadas
+  
+  // Performance
+  duration        Int?    // Duração da verificação em ms
+  memoryUsage     Int?    // Uso de memória em MB
+  
+  // Metadados
+  companyId       String? // Empresa relacionada (opcional para verificações globais)
+  userId          String? // Usuário que iniciou a verificação
+  
+  // Compliance
+  retentionPeriod Int     @default(1825) // 5 anos em dias
+  isComplianceRequired Boolean @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([timestamp])
+  @@index([checkType])
+  @@index([status])
+  @@index([entityType])
+  @@index([companyId])
+}
+
+model BackupOperation {
+  id          String   @id @default(cuid())
+  timestamp   DateTime @default(now())
+  operationType BackupType
+  status      BackupStatus
+  
+  // Escopo do backup
+  entityTypes String[] // Tipos de entidades incluídos
+  dateRange   Json?    // Período do backup {startDate, endDate}
+  
+  // Informações do arquivo
+  fileName    String?  // Nome do arquivo de backup
+  fileSize    Int?     // Tamanho em bytes
+  fileHash    String?  // Hash do arquivo para verificação
+  
+  // Localizações
+  primaryLocation   String   // Localização primária
+  backupLocations   String[] // Localizações de backup
+  
+  // Metadados
+  compressionRatio  Float?   // Taxa de compressão
+  encryptionType    String?  // Tipo de criptografia usado
+  retentionDays     Int      @default(1825) // Dias de retenção
+  
+  // Performance
+  duration          Int?     // Duração em ms
+  recordsProcessed  Int      @default(0)
+  recordsBackedUp   Int      @default(0)
+  
+  // Metadados
+  companyId         String?  // Empresa relacionada (opcional para backups globais)
+  userId            String?  // Usuário que iniciou o backup
+  
+  // Compliance
+  isComplianceRequired Boolean @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([timestamp])
+  @@index([operationType])
+  @@index([status])
+  @@index([companyId])
+}
+
+model StorageHealth {
+  id          String   @id @default(cuid())
+  timestamp   DateTime @default(now())
+  storageType StorageType
+  location    String   // Localização/identificação do storage
+  
+  // Status de saúde
+  isAvailable Boolean  @default(true)
+  isHealthy   Boolean  @default(true)
+  
+  // Métricas de performance
+  responseTime Int?     // Tempo de resposta em ms
+  throughput   Float?   // Throughput em MB/s
+  errorRate    Float?   // Taxa de erro em %
+  
+  // Capacidade
+  totalSpace   Int?     // Espaço total em bytes
+  usedSpace    Int?     // Espaço usado em bytes
+  freeSpace    Int?     // Espaço livre em bytes
+  
+  // Detalhes
+  lastError    String?  // Último erro ocorrido
+  errorCount   Int      @default(0) // Contador de erros
+  
+  // Metadados
+  companyId    String?  // Empresa relacionada (opcional para storage global)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([timestamp])
+  @@index([storageType])
+  @@index([isAvailable])
+  @@index([isHealthy])
+  @@index([companyId])
+}
+
+enum RedundancyStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+  PARTIAL
+  VERIFIED
+  CORRUPTED
+}
+
+enum IntegrityCheckType {
+  HASH_VERIFICATION
+  DATA_CONSISTENCY
+  REFERENTIAL_INTEGRITY
+  COMPLETE_SCAN
+  INCREMENTAL_SCAN
+  BACKUP_VERIFICATION
+}
+
+enum IntegrityCheckStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+  PARTIAL_SUCCESS
+  CORRUPTION_DETECTED
+}
+
+enum BackupType {
+  FULL
+  INCREMENTAL
+  DIFFERENTIAL
+  SELECTIVE
+  COMPLIANCE
+}
+
+enum BackupStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+  CANCELLED
+  VERIFIED
+  EXPIRED
+}
+
+enum StorageType {
+  PRIMARY_DATABASE
+  BACKUP_DATABASE
+  FILE_STORAGE
+  CLOUD_STORAGE
+  ARCHIVE_STORAGE
+  COMPLIANCE_STORAGE
 }

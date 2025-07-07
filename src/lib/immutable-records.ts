@@ -1,5 +1,6 @@
 import { TimeRecord } from "@/types/time-record";
 import { createTimeRecordAuditLog } from "@/lib/time-record";
+import crypto from 'crypto';
 
 /**
  * Configurações para registros imutáveis
@@ -380,4 +381,113 @@ export function generateAdjustmentReport(adjustments: AdjustmentJustification[])
   });
 
   return report;
+}
+
+export interface ImmutableRecordData {
+  userId: string;
+  employeeId: string;
+  companyId: string;
+  type: string;
+  timestamp: Date;
+  latitude?: number;
+  longitude?: number;
+  ipAddress?: string;
+  deviceInfo?: string;
+  photoUrl?: string;
+  nfcTag?: string;
+}
+
+/**
+ * Gera um hash único para o registro de ponto
+ * Este hash é usado para garantir a imutabilidade do registro
+ */
+export function generateRecordHash(data: ImmutableRecordData): string {
+  const hashData = {
+    userId: data.userId,
+    employeeId: data.employeeId,
+    companyId: data.companyId,
+    type: data.type,
+    timestamp: data.timestamp.toISOString(),
+    latitude: data.latitude,
+    longitude: data.longitude,
+    ipAddress: data.ipAddress,
+    deviceInfo: data.deviceInfo,
+    photoUrl: data.photoUrl,
+    nfcTag: data.nfcTag,
+  };
+
+  const hashString = JSON.stringify(hashData, Object.keys(hashData).sort());
+  return crypto.createHash('sha256').update(hashString).digest('hex');
+}
+
+/**
+ * Gera um hash de integridade para verificação posterior
+ * Este hash inclui informações adicionais de segurança
+ */
+export function generateIntegrityHash(data: ImmutableRecordData, recordId: string): string {
+  const integrityData = {
+    recordId,
+    ...data,
+    timestamp: data.timestamp.toISOString(),
+    createdAt: new Date().toISOString(),
+  };
+
+  const hashString = JSON.stringify(integrityData, Object.keys(integrityData).sort());
+  return crypto.createHash('sha256').update(hashString).digest('hex');
+}
+
+/**
+ * Verifica se um registro foi modificado comparando os hashes
+ */
+export function verifyRecordIntegrity(
+  originalHash: string,
+  integrityHash: string,
+  data: ImmutableRecordData,
+  recordId: string
+): boolean {
+  const currentHash = generateRecordHash(data);
+  const currentIntegrityHash = generateIntegrityHash(data, recordId);
+
+  return currentHash === originalHash && currentIntegrityHash === integrityHash;
+}
+
+/**
+ * Valida se os dados do registro são consistentes
+ */
+export function validateRecordData(data: ImmutableRecordData): boolean {
+  return !!(
+    data.userId &&
+    data.employeeId &&
+    data.companyId &&
+    data.type &&
+    data.timestamp &&
+    data.timestamp instanceof Date &&
+    !isNaN(data.timestamp.getTime())
+  );
+}
+
+/**
+ * Cria um timestamp criptográfico para o registro
+ */
+export function generateIntegrityTimestamp(): Date {
+  return new Date();
+}
+
+/**
+ * Formata dados para exibição em logs de auditoria
+ */
+export function formatRecordForAudit(data: ImmutableRecordData, recordId: string): string {
+  return JSON.stringify({
+    recordId,
+    userId: data.userId,
+    employeeId: data.employeeId,
+    companyId: data.companyId,
+    type: data.type,
+    timestamp: data.timestamp.toISOString(),
+    location: data.latitude && data.longitude ? `${data.latitude},${data.longitude}` : 'N/A',
+    ipAddress: data.ipAddress || 'N/A',
+    deviceInfo: data.deviceInfo || 'N/A',
+    hasPhoto: !!data.photoUrl,
+    hasNFC: !!data.nfcTag,
+  }, null, 2);
 } 

@@ -46,7 +46,7 @@ export default function BiometricPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <BiometricAuth />
+              <BiometricAuth employeeId="1" />
             </CardContent>
           </Card>
         </div>

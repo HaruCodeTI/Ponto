@@ -30,10 +30,26 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        // Verifica se email está verificado
+        if (!user.emailVerified) {
+          throw new Error("EMAIL_NOT_VERIFIED");
+        }
+
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
 
         if (!isPasswordValid) {
           return null;
+        }
+
+        // Se 2FA está ativado, retorna informações parciais para permitir verificação
+        if (user.twoFactorEnabled) {
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            requiresTwoFactor: true,
+          };
         }
 
         return {

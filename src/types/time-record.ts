@@ -18,6 +18,8 @@ export interface TimeRecord {
   photoUrl?: string;
   nfcTag?: string;
   hash: string; // Hash único para garantir imutabilidade
+  integrityHash: string; // Hash de integridade imutável
+  integrityTimestamp: string; // Timestamp criptográfico
   createdAt: string; // ISO string
   
   // Relacionamentos
@@ -676,4 +678,151 @@ export interface DuplicateRules {
     allowMultipleBreaks: boolean;
     specialDays: string[]; // Datas especiais (feriados, etc.)
   };
+}
+
+export type AdjustmentStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+/**
+ * Interface para ajuste de registro de ponto
+ */
+export interface TimeRecordAdjustment {
+  id: string;
+  originalRecordId: string;
+  originalRecord: TimeRecord;
+  
+  // Dados do ajuste
+  adjustedTimestamp: string; // ISO string
+  adjustedType?: RecordType;
+  reason: string;
+  evidence?: string;
+  
+  // Aprovação
+  approvedBy: string;
+  approvedAt: string; // ISO string
+  approvalStatus: AdjustmentStatus;
+  
+  // Auditoria
+  requestedBy: string;
+  requestedAt: string; // ISO string
+  companyId: string;
+  
+  // Campos de compliance
+  complianceReason?: string;
+  legalBasis?: string;
+  retentionPeriod: number; // 5 anos em dias
+  
+  createdAt: string; // ISO string
+  updatedAt: string; // ISO string
+}
+
+/**
+ * Dados para criação de ajuste
+ */
+export interface CreateAdjustmentData {
+  originalRecordId: string;
+  adjustedTimestamp: string; // ISO string
+  adjustedType?: RecordType;
+  reason: string;
+  evidence?: string;
+  complianceReason?: string;
+  legalBasis?: string;
+  requestedBy: string;
+  companyId: string;
+}
+
+/**
+ * Dados para aprovação de ajuste
+ */
+export interface ApproveAdjustmentData {
+  adjustmentId: string;
+  approvedBy: string;
+  approvalStatus: 'APPROVED' | 'REJECTED';
+  approvalNotes?: string;
+}
+
+/**
+ * Filtros para busca de ajustes
+ */
+export interface AdjustmentFilters {
+  companyId?: string;
+  employeeId?: string;
+  originalRecordId?: string;
+  approvalStatus?: AdjustmentStatus;
+  startDate?: string;
+  endDate?: string;
+  requestedBy?: string;
+  approvedBy?: string;
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Resposta de ajustes
+ */
+export interface AdjustmentResponse {
+  adjustments: TimeRecordAdjustment[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+/**
+ * Estatísticas de ajustes
+ */
+export interface AdjustmentStats {
+  totalAdjustments: number;
+  pendingAdjustments: number;
+  approvedAdjustments: number;
+  rejectedAdjustments: number;
+  averageProcessingTime: number; // Em horas
+  adjustmentsByReason: Record<string, number>;
+  adjustmentsByMonth: Record<string, number>;
+  complianceRate: number; // Percentual de ajustes com base legal
+}
+
+/**
+ * Motivos de compliance para ajustes
+ */
+export type ComplianceReason = 
+  | 'FORGOT_TO_REGISTER'
+  | 'TECHNICAL_FAILURE'
+  | 'SYSTEM_ERROR'
+  | 'POWER_OUTAGE'
+  | 'NETWORK_ISSUE'
+  | 'DEVICE_MALFUNCTION'
+  | 'HUMAN_ERROR'
+  | 'LEGAL_REQUIREMENT'
+  | 'MEDICAL_EMERGENCY'
+  | 'FAMILY_EMERGENCY'
+  | 'PUBLIC_TRANSPORT_DELAY'
+  | 'WEATHER_CONDITIONS'
+  | 'OTHER';
+
+/**
+ * Base legal para ajustes
+ */
+export type LegalBasis = 
+  | 'PORTARIA_671_2021'
+  | 'CLT_ART_74'
+  | 'CLT_ART_75'
+  | 'CONVENCAO_COLETIVA'
+  | 'ACORDO_COLETIVO'
+  | 'POLITICA_INTERNA'
+  | 'OTHER';
+
+/**
+ * Configuração de ajustes por empresa
+ */
+export interface AdjustmentConfig {
+  companyId: string;
+  allowAdjustments: boolean;
+  requireApproval: boolean;
+  maxAdjustmentDays: number; // Dias após o registro
+  requireEvidence: boolean;
+  allowedReasons: ComplianceReason[];
+  autoApprovalLimit: number; // Minutos para auto-aprovação
+  notificationRecipients: string[]; // Emails para notificação
+  complianceMode: boolean; // Modo compliance ativo
+  retentionPeriod: number; // Dias de retenção
 } 

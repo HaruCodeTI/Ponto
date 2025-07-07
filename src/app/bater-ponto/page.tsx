@@ -150,7 +150,7 @@ export default function BaterPontoPage() {
             <DialogHeader>
               <DialogTitle>Autenticação Biométrica</DialogTitle>
             </DialogHeader>
-            <BiometricAuth />
+            <BiometricAuth employeeId="1" />
           </DialogContent>
         </Dialog>
         <div className="flex flex-col gap-1">

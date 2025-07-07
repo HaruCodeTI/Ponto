@@ -276,4 +276,13 @@
 - Este checklist será atualizado conforme novas necessidades forem identificadas
 - Priorizar itens baseado no impacto no negócio e facilidade de implementação
 - Considerar feedback dos usuários para adicionar novos itens
-- Revisar periodicamente para manter relevância 
+- Revisar periodicamente para manter relevância
+
+- Permitir login por CPF além de email (conforme Portaria 671)
+- Adicionar feedback visual para erros de autenticação (ex: tentativas bloqueadas após X erros)
+- Implementar autenticação social (Google, Microsoft) para empresas que desejarem
+- Adicionar opção de lembrar sessão ("manter conectado")
+- Melhorar UX mobile do formulário de login
+- Adicionar logs de tentativas de login e logout para auditoria
+- Implementar bloqueio temporário após múltiplas tentativas inválidas
+- Adicionar testes automatizados para fluxo de login/logout 
