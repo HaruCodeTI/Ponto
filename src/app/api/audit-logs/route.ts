@@ -1,42 +1,46 @@
-import { NextRequest, NextResponse } from "next/server";
-import { 
-  createSecurityAuditLog,
-  createSystemAuditLog
-} from "@/lib/audit-logs";
-import { 
-  TimeRecordAuditLog
-} from "@/types/time-record";
-import { requireRole } from '@/lib/auth-middleware';
-import { getAuditLogs } from '@/lib/authorization';
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { findAuditLogs, createAuditLog } from '@/lib/audit-logs';
 
-/**
- * GET /api/audit-logs
- * Busca logs de auditoria com filtros
- */
 export async function GET(request: NextRequest) {
-  // Verificar se é admin
-  const authCheck = await requireRole(request, ['ADMIN']);
-  if (authCheck) return authCheck;
-
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    
-    const filters = {
-      userId: searchParams.get('userId') || undefined,
-      action: searchParams.get('action') || undefined,
-      resource: searchParams.get('resource') || undefined,
-      startDate: searchParams.get('startDate') ? new Date(searchParams.get('startDate')!) : undefined,
-      endDate: searchParams.get('endDate') ? new Date(searchParams.get('endDate')!) : undefined,
-      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 100,
-    };
+    const companyId = searchParams.get('companyId');
+    const userId = searchParams.get('userId');
+    const category = searchParams.get('category');
+    const severity = searchParams.get('severity');
+    const status = searchParams.get('status');
+    const resourceType = searchParams.get('resourceType');
+    const resourceId = searchParams.get('resourceId');
+    const action = searchParams.get('action');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+    const ipAddress = searchParams.get('ipAddress');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
 
-    const logs = await getAuditLogs(filters);
+    const filters: any = {};
+    if (companyId) filters.companyId = companyId;
+    if (userId) filters.userId = userId;
+    if (category) filters.category = category;
+    if (severity) filters.severity = severity;
+    if (status) filters.status = status;
+    if (resourceType) filters.resourceType = resourceType;
+    if (resourceId) filters.resourceId = resourceId;
+    if (action) filters.action = action;
+    if (dateFrom) filters.dateFrom = new Date(dateFrom);
+    if (dateTo) filters.dateTo = new Date(dateTo);
+    if (ipAddress) filters.ipAddress = ipAddress;
 
-    return NextResponse.json({
-      success: true,
-      data: logs,
-      total: logs.length,
-    });
+    const result = await findAuditLogs(filters, page, limit);
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Erro ao buscar logs de auditoria:', error);
     return NextResponse.json(
@@ -46,45 +50,65 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/**
- * POST /api/audit-logs
- * Cria log de auditoria
- */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { type, ...payload } = body;
+    const {
+      companyId,
+      userId,
+      employeeId,
+      sessionId,
+      action,
+      category,
+      severity,
+      status,
+      resourceType,
+      resourceId,
+      oldValues,
+      newValues,
+      metadata,
+      ipAddress,
+      userAgent,
+      location
+    } = body;
 
-    if (!type || !payload.userId || !payload.employeeId || !payload.companyId) {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Tipo, userId, employeeId e companyId são obrigatórios" 
-      }, { status: 400 });
+    if (!companyId || !action || !category || !severity || !status) {
+      return NextResponse.json(
+        { error: 'Dados obrigatórios não fornecidos' },
+        { status: 400 }
+      );
     }
 
-    let log: TimeRecordAuditLog;
+    const auditLog = await createAuditLog({
+      companyId,
+      userId,
+      employeeId,
+      sessionId,
+      action,
+      category,
+      severity,
+      status,
+      resourceType,
+      resourceId,
+      oldValues,
+      newValues,
+      metadata,
+      ipAddress,
+      userAgent,
+      location
+    });
 
-    if (type === 'SECURITY') {
-      log = await createSecurityAuditLog(payload);
-    } else if (type === 'SYSTEM') {
-      log = await createSystemAuditLog(payload);
-    } else {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Tipo de log inválido. Use 'SECURITY' ou 'SYSTEM'" 
-      }, { status: 400 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: log,
-    }, { status: 201 });
-
+    return NextResponse.json(auditLog, { status: 201 });
   } catch (error) {
     console.error('Erro ao criar log de auditoria:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: "Erro interno do servidor" 
-    }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Erro interno do servidor' },
+      { status: 500 }
+    );
   }
 } 

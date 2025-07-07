@@ -1,547 +1,432 @@
-import { TimeRecord, RecordType } from "@/types/time-record";
+import { prisma } from './prisma';
+import { 
+  Notification, 
+  NotificationPreference, 
+  NotificationStats, 
+  NotificationMetadata,
+  NotificationCategories,
+  QuietHours
+} from '@/types';
 
-/**
- * Tipos de notificação
- */
-export type NotificationType = 
-  | 'TIME_RECORD_SUCCESS'
-  | 'TIME_RECORD_FAILED'
-  | 'ADJUSTMENT_REQUEST'
-  | 'ADJUSTMENT_APPROVED'
-  | 'ADJUSTMENT_REJECTED'
-  | 'SYSTEM_ALERT'
-  | 'COMPLIANCE_WARNING'
-  | 'DAILY_SUMMARY'
-  | 'OVERTIME_WARNING'
-  | 'LATE_ARRIVAL'
-  | 'EARLY_DEPARTURE'
-  | 'MISSING_RECORD';
+export async function createNotification(
+  data: {
+    companyId: string;
+    userId?: string;
+    employeeId?: string;
+    type: Notification['type'];
+    title: string;
+    message: string;
+    priority: Notification['priority'];
+    category: string;
+    metadata?: NotificationMetadata;
+    expiresAt?: Date;
+  }
+): Promise<Notification> {
+  // Verificar preferências do usuário
+  const preferences = await getNotificationPreferences(
+    data.companyId,
+    data.userId,
+    data.employeeId
+  );
 
-/**
- * Prioridades de notificação
- */
-export type NotificationPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  // Verificar se notificação está habilitada
+  if (!preferences.inAppEnabled) {
+    throw new Error('Notificações in-app desabilitadas');
+  }
 
-/**
- * Interface para notificação
- */
-export interface Notification {
-  id: string;
-  type: NotificationType;
-  priority: NotificationPriority;
-  title: string;
-  message: string;
-  recipientId: string;
-  recipientType: 'EMPLOYEE' | 'MANAGER' | 'ADMIN' | 'SYSTEM';
-  companyId: string;
-  employeeId?: string;
-  timeRecordId?: string;
-  adjustmentId?: string;
-  metadata?: {
-    location?: { latitude: number; longitude: number };
-    deviceInfo?: string;
-    ipAddress?: string;
-    [key: string]: unknown;
-  };
-  read: boolean;
-  createdAt: string;
-  expiresAt?: string;
-  actionUrl?: string;
-  actionText?: string;
+  // Verificar horário silencioso
+  if (isInQuietHours(preferences.quietHours)) {
+    // Salvar para envio posterior
+    return await prisma.notification.create({
+      data: {
+        ...data,
+        metadata: data.metadata || {},
+        expiresAt: data.expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 dias
+      }
+    });
+  }
+
+  // Verificar categoria habilitada
+  if (!isCategoryEnabled(preferences.categories, data.category)) {
+    throw new Error(`Categoria ${data.category} desabilitada`);
+  }
+
+  // Criar notificação
+  const notification = await prisma.notification.create({
+    data: {
+      ...data,
+      metadata: data.metadata || {},
+      expiresAt: data.expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 dias
+    }
+  });
+
+  // TODO: Enviar via WebSocket para tempo real
+  // TODO: Enviar email se habilitado
+  // TODO: Enviar push se habilitado
+  // TODO: Enviar SMS se habilitado
+
+  return notification;
 }
 
-/**
- * Interface para configurações de notificação
- */
-export interface NotificationConfig {
-  enabled: boolean;
-  types: NotificationType[];
-  priority: NotificationPriority;
-  channels: ('IN_APP' | 'EMAIL' | 'SMS' | 'PUSH')[];
-  schedule?: {
-    startTime?: string; // HH:mm
-    endTime?: string; // HH:mm
-    timezone?: string;
-    daysOfWeek?: number[]; // 0-6 (Domingo-Sábado)
-  };
-  autoDelete?: {
-    enabled: boolean;
-    daysToKeep: number;
-  };
-}
-
-/**
- * Configurações padrão para notificações
- */
-export const DEFAULT_NOTIFICATION_CONFIG: NotificationConfig = {
-  enabled: true,
-  types: [
-    'TIME_RECORD_SUCCESS',
-    'TIME_RECORD_FAILED',
-    'ADJUSTMENT_REQUEST',
-    'ADJUSTMENT_APPROVED',
-    'ADJUSTMENT_REJECTED',
-    'SYSTEM_ALERT',
-    'COMPLIANCE_WARNING',
-    'OVERTIME_WARNING',
-    'LATE_ARRIVAL',
-    'EARLY_DEPARTURE',
-  ],
-  priority: 'MEDIUM',
-  channels: ['IN_APP'],
-  autoDelete: {
-    enabled: true,
-    daysToKeep: 30,
+export async function findNotifications(
+  filters: {
+    companyId?: string;
+    userId?: string;
+    employeeId?: string;
+    type?: string;
+    priority?: string;
+    category?: string;
+    isRead?: boolean;
+    isArchived?: boolean;
   },
+  page = 1,
+  limit = 50
+): Promise<{ data: Notification[]; total: number; page: number; totalPages: number }> {
+  const whereClause: any = {};
+  
+  if (filters.companyId) whereClause.companyId = filters.companyId;
+  if (filters.userId) whereClause.userId = filters.userId;
+  if (filters.employeeId) whereClause.employeeId = filters.employeeId;
+  if (filters.type) whereClause.type = filters.type;
+  if (filters.priority) whereClause.priority = filters.priority;
+  if (filters.category) whereClause.category = filters.category;
+  if (filters.isRead !== undefined) whereClause.isRead = filters.isRead;
+  if (filters.isArchived !== undefined) whereClause.isArchived = filters.isArchived;
+
+  const [data, total] = await Promise.all([
+    prisma.notification.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit
+    }),
+    prisma.notification.count({ where: whereClause })
+  ]);
+
+  return {
+    data,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit)
+  };
+}
+
+export async function markNotificationAsRead(
+  notificationId: string,
+  userId?: string
+): Promise<Notification> {
+  const notification = await prisma.notification.update({
+    where: { id: notificationId },
+    data: {
+      isRead: true,
+      readAt: new Date()
+    }
+  });
+
+  return notification;
+}
+
+export async function markAllNotificationsAsRead(
+  filters: {
+    companyId?: string;
+    userId?: string;
+    employeeId?: string;
+    category?: string;
+  }
+): Promise<{ count: number }> {
+  const whereClause: any = { isRead: false };
+  
+  if (filters.companyId) whereClause.companyId = filters.companyId;
+  if (filters.userId) whereClause.userId = filters.userId;
+  if (filters.employeeId) whereClause.employeeId = filters.employeeId;
+  if (filters.category) whereClause.category = filters.category;
+
+  const result = await prisma.notification.updateMany({
+    where: whereClause,
+    data: {
+      isRead: true,
+      readAt: new Date()
+    }
+  });
+
+  return { count: result.count };
+}
+
+export async function archiveNotification(
+  notificationId: string
+): Promise<Notification> {
+  const notification = await prisma.notification.update({
+    where: { id: notificationId },
+    data: { isArchived: true }
+  });
+
+  return notification;
+}
+
+export async function deleteNotification(
+  notificationId: string
+): Promise<void> {
+  await prisma.notification.delete({
+    where: { id: notificationId }
+  });
+}
+
+export async function getNotificationStats(
+  filters: {
+    companyId?: string;
+    userId?: string;
+    employeeId?: string;
+  }
+): Promise<NotificationStats> {
+  const whereClause: any = {};
+  
+  if (filters.companyId) whereClause.companyId = filters.companyId;
+  if (filters.userId) whereClause.userId = filters.userId;
+  if (filters.employeeId) whereClause.employeeId = filters.employeeId;
+
+  const [
+    total,
+    unread,
+    archived,
+    byType,
+    byPriority,
+    byCategory
+  ] = await Promise.all([
+    prisma.notification.count({ where: whereClause }),
+    prisma.notification.count({ where: { ...whereClause, isRead: false } }),
+    prisma.notification.count({ where: { ...whereClause, isArchived: true } }),
+    prisma.notification.groupBy({
+      by: ['type'],
+      where: whereClause,
+      _count: { type: true }
+    }),
+    prisma.notification.groupBy({
+      by: ['priority'],
+      where: whereClause,
+      _count: { priority: true }
+    }),
+    prisma.notification.groupBy({
+      by: ['category'],
+      where: whereClause,
+      _count: { category: true }
+    })
+  ]);
+
+  return {
+    total,
+    unread,
+    archived,
+    byType: byType.reduce((acc, item) => {
+      acc[item.type] = item._count.type;
+      return acc;
+    }, {} as Record<string, number>),
+    byPriority: byPriority.reduce((acc, item) => {
+      acc[item.priority] = item._count.priority;
+      return acc;
+    }, {} as Record<string, number>),
+    byCategory: byCategory.reduce((acc, item) => {
+      acc[item.category] = item._count.category;
+      return acc;
+    }, {} as Record<string, number>)
+  };
+}
+
+export async function getNotificationPreferences(
+  companyId: string,
+  userId?: string,
+  employeeId?: string
+): Promise<NotificationPreference> {
+  let preferences = await prisma.notificationPreference.findUnique({
+    where: {
+      companyId_userId_employeeId: {
+        companyId,
+        userId: userId || null,
+        employeeId: employeeId || null
+      }
+    }
+  });
+
+  if (!preferences) {
+    // Criar preferências padrão
+    preferences = await prisma.notificationPreference.create({
+      data: {
+        companyId,
+        userId: userId || null,
+        employeeId: employeeId || null,
+        emailEnabled: true,
+        pushEnabled: true,
+        smsEnabled: false,
+        inAppEnabled: true,
+        categories: {
+          ponto: true,
+          relatorios: true,
+          sistema: true,
+          compliance: true,
+          aprovacoes: true,
+          alertas: true,
+          lembretes: true
+        },
+        frequency: 'IMMEDIATE'
+      }
+    });
+  }
+
+  return preferences;
+}
+
+export async function updateNotificationPreferences(
+  companyId: string,
+  data: Partial<NotificationPreference>,
+  userId?: string,
+  employeeId?: string
+): Promise<NotificationPreference> {
+  const preferences = await prisma.notificationPreference.upsert({
+    where: {
+      companyId_userId_employeeId: {
+        companyId,
+        userId: userId || null,
+        employeeId: employeeId || null
+      }
+    },
+    update: data,
+    create: {
+      companyId,
+      userId: userId || null,
+      employeeId: employeeId || null,
+      emailEnabled: true,
+      pushEnabled: true,
+      smsEnabled: false,
+      inAppEnabled: true,
+      categories: {
+        ponto: true,
+        relatorios: true,
+        sistema: true,
+        compliance: true,
+        aprovacoes: true,
+        alertas: true,
+        lembretes: true
+      },
+      frequency: 'IMMEDIATE',
+      ...data
+    }
+  });
+
+  return preferences;
+}
+
+export async function cleanupExpiredNotifications(): Promise<{ count: number }> {
+  const result = await prisma.notification.deleteMany({
+    where: {
+      expiresAt: {
+        lt: new Date()
+      }
+    }
+  });
+
+  return { count: result.count };
+}
+
+function isInQuietHours(quietHours?: QuietHours): boolean {
+  if (!quietHours || !quietHours.enabled) {
+    return false;
+  }
+
+  const now = new Date();
+  const currentDay = now.getDay();
+  const currentTime = now.toTimeString().substring(0, 5);
+
+  // Verificar se é um dia habilitado
+  if (!quietHours.days.includes(currentDay)) {
+    return false;
+  }
+
+  // Verificar se está no horário silencioso
+  return currentTime >= quietHours.startTime && currentTime <= quietHours.endTime;
+}
+
+function isCategoryEnabled(
+  categories: NotificationCategories,
+  category: string
+): boolean {
+  const categoryMap: Record<string, keyof NotificationCategories> = {
+    'ponto': 'ponto',
+    'relatorios': 'relatorios',
+    'sistema': 'sistema',
+    'compliance': 'compliance',
+    'aprovacoes': 'aprovacoes',
+    'alertas': 'alertas',
+    'lembretes': 'lembretes'
+  };
+
+  const categoryKey = categoryMap[category];
+  return categoryKey ? categories[categoryKey] : true;
+}
+
+// Funções para templates de notificação
+export const NOTIFICATION_TEMPLATES = {
+  PONTO_REGISTRADO: {
+    title: 'Ponto Registrado',
+    message: 'Seu ponto foi registrado com sucesso às {time}',
+    type: 'SUCCESS' as const,
+    priority: 'NORMAL' as const,
+    category: 'ponto'
+  },
+  PONTO_ATRASO: {
+    title: 'Atraso Detectado',
+    message: 'Você chegou {minutes} minutos atrasado hoje',
+    type: 'WARNING' as const,
+    priority: 'HIGH' as const,
+    category: 'ponto'
+  },
+  RELATORIO_PRONTO: {
+    title: 'Relatório Pronto',
+    message: 'O relatório {tipo} está pronto para download',
+    type: 'INFO' as const,
+    priority: 'NORMAL' as const,
+    category: 'relatorios'
+  },
+  APROVACAO_PENDENTE: {
+    title: 'Aprovação Pendente',
+    message: 'Você tem {count} itens aguardando aprovação',
+    type: 'ALERT' as const,
+    priority: 'HIGH' as const,
+    category: 'aprovacoes'
+  },
+  SISTEMA_ERRO: {
+    title: 'Erro do Sistema',
+    message: 'Ocorreu um erro no sistema: {error}',
+    type: 'ERROR' as const,
+    priority: 'URGENT' as const,
+    category: 'sistema'
+  }
 };
 
-/**
- * Gera ID único para notificação
- */
-function generateNotificationId(): string {
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 8);
-  return `notif_${timestamp}_${random}`;
-}
-
-/**
- * Cria notificação de registro de ponto bem-sucedido
- */
-export function createTimeRecordSuccessNotification(
-  timeRecord: TimeRecord,
-  employeeName: string,
-  _companyName: string
-): Notification {
-  const getTypeLabel = (type: RecordType): string => {
-    switch (type) {
-      case 'ENTRY': return 'Entrada';
-      case 'EXIT': return 'Saída';
-      case 'BREAK_START': return 'Início do Intervalo';
-      case 'BREAK_END': return 'Fim do Intervalo';
-      default: return type;
-    }
-  };
-
-  return {
-    id: generateNotificationId(),
-    type: 'TIME_RECORD_SUCCESS',
-    priority: 'LOW',
-    title: `Ponto registrado com sucesso`,
-    message: `${getTypeLabel(timeRecord.type)} registrada às ${new Date(timeRecord.timestamp).toLocaleTimeString('pt-BR')} - ${employeeName}`,
-    recipientId: timeRecord.userId,
-    recipientType: 'EMPLOYEE',
-    companyId: timeRecord.companyId,
-    employeeId: timeRecord.employeeId,
-    timeRecordId: timeRecord.id,
-    metadata: {
-      location: timeRecord.latitude && timeRecord.longitude ? {
-        latitude: timeRecord.latitude,
-        longitude: timeRecord.longitude,
-      } : undefined,
-      deviceInfo: timeRecord.deviceInfo,
-      ipAddress: timeRecord.ipAddress,
-    },
-    read: false,
-    createdAt: new Date().toISOString(),
-    actionUrl: `/funcionarios/${timeRecord.employeeId}`,
-    actionText: 'Ver detalhes',
-  };
-}
-
-/**
- * Cria notificação de falha no registro de ponto
- */
-export function createTimeRecordFailedNotification(
-  userId: string,
-  employeeId: string,
+export function createNotificationFromTemplate(
+  template: keyof typeof NOTIFICATION_TEMPLATES,
+  variables: Record<string, any>,
   companyId: string,
-  error: string,
-  attemptData: Partial<TimeRecord>
-): Notification {
-  return {
-    id: generateNotificationId(),
-    type: 'TIME_RECORD_FAILED',
-    priority: 'HIGH',
-    title: `Falha no registro de ponto`,
-    message: `Erro ao registrar ponto: ${error}`,
-    recipientId: userId,
-    recipientType: 'EMPLOYEE',
-    companyId,
-    employeeId,
-    metadata: {
-      location: attemptData.latitude && attemptData.longitude ? {
-        latitude: attemptData.latitude,
-        longitude: attemptData.longitude,
-      } : undefined,
-      deviceInfo: attemptData.deviceInfo,
-      ipAddress: attemptData.ipAddress,
-      error,
-    },
-    read: false,
-    createdAt: new Date().toISOString(),
-    actionUrl: `/bater-ponto`,
-    actionText: 'Tentar novamente',
-  };
-}
-
-/**
- * Cria notificação de solicitação de ajuste
- */
-export function createAdjustmentRequestNotification(
-  adjustmentId: string,
-  originalRecordId: string,
-  requestedBy: string,
-  employeeId: string,
-  companyId: string,
-  reason: string
-): Notification {
-  return {
-    id: generateNotificationId(),
-    type: 'ADJUSTMENT_REQUEST',
-    priority: 'MEDIUM',
-    title: `Solicitação de ajuste de ponto`,
-    message: `Nova solicitação de ajuste para registro ${originalRecordId}: ${reason}`,
-    recipientId: 'manager', // Em produção, seria o ID do gestor
-    recipientType: 'MANAGER',
-    companyId,
-    employeeId,
-    adjustmentId,
-    metadata: {
-      requestedBy,
-      originalRecordId,
-      reason,
-    },
-    read: false,
-    createdAt: new Date().toISOString(),
-    actionUrl: `/empresa/ajustes`,
-    actionText: 'Revisar solicitação',
-  };
-}
-
-/**
- * Cria notificação de ajuste aprovado
- */
-export function createAdjustmentApprovedNotification(
-  adjustmentId: string,
-  employeeId: string,
-  companyId: string,
-  approvedBy: string
-): Notification {
-  return {
-    id: generateNotificationId(),
-    type: 'ADJUSTMENT_APPROVED',
-    priority: 'MEDIUM',
-    title: `Ajuste de ponto aprovado`,
-    message: `Seu ajuste de ponto foi aprovado por ${approvedBy}`,
-    recipientId: 'employee', // Em produção, seria o ID do funcionário
-    recipientType: 'EMPLOYEE',
-    companyId,
-    employeeId,
-    adjustmentId,
-    metadata: {
-      approvedBy,
-    },
-    read: false,
-    createdAt: new Date().toISOString(),
-    actionUrl: `/funcionarios/${employeeId}`,
-    actionText: 'Ver registro',
-  };
-}
-
-/**
- * Cria notificação de ajuste rejeitado
- */
-export function createAdjustmentRejectedNotification(
-  adjustmentId: string,
-  employeeId: string,
-  companyId: string,
-  rejectedBy: string,
-  rejectionReason: string
-): Notification {
-  return {
-    id: generateNotificationId(),
-    type: 'ADJUSTMENT_REJECTED',
-    priority: 'HIGH',
-    title: `Ajuste de ponto rejeitado`,
-    message: `Seu ajuste foi rejeitado: ${rejectionReason}`,
-    recipientId: 'employee', // Em produção, seria o ID do funcionário
-    recipientType: 'EMPLOYEE',
-    companyId,
-    employeeId,
-    adjustmentId,
-    metadata: {
-      rejectedBy,
-      rejectionReason,
-    },
-    read: false,
-    createdAt: new Date().toISOString(),
-    actionUrl: `/empresa/ajustes`,
-    actionText: 'Ver detalhes',
-  };
-}
-
-/**
- * Cria notificação de alerta de compliance
- */
-export function createComplianceWarningNotification(
-  employeeId: string,
-  companyId: string,
-  warning: string,
-  severity: 'LOW' | 'MEDIUM' | 'HIGH'
-): Notification {
-  const priority: NotificationPriority = severity === 'HIGH' ? 'URGENT' : severity === 'MEDIUM' ? 'HIGH' : 'MEDIUM';
-
-  return {
-    id: generateNotificationId(),
-    type: 'COMPLIANCE_WARNING',
-    priority,
-    title: `Alerta de Compliance`,
-    message: warning,
-    recipientId: 'manager', // Em produção, seria o ID do gestor
-    recipientType: 'MANAGER',
-    companyId,
-    employeeId,
-    metadata: {
-      severity,
-      warning,
-    },
-    read: false,
-    createdAt: new Date().toISOString(),
-    actionUrl: `/empresa/compliance`,
-    actionText: 'Ver alertas',
-  };
-}
-
-/**
- * Cria notificação de horas extras
- */
-export function createOvertimeWarningNotification(
-  employeeId: string,
-  companyId: string,
-  overtimeHours: number,
-  date: string
-): Notification {
-  return {
-    id: generateNotificationId(),
-    type: 'OVERTIME_WARNING',
-    priority: 'MEDIUM',
-    title: `Horas Extras Detectadas`,
-    message: `${overtimeHours}h extras registradas em ${new Date(date).toLocaleDateString('pt-BR')}`,
-    recipientId: 'manager', // Em produção, seria o ID do gestor
-    recipientType: 'MANAGER',
-    companyId,
-    employeeId,
-    metadata: {
-      overtimeHours,
-      date,
-    },
-    read: false,
-    createdAt: new Date().toISOString(),
-    actionUrl: `/relatorios`,
-    actionText: 'Ver relatório',
-  };
-}
-
-/**
- * Cria notificação de atraso
- */
-export function createLateArrivalNotification(
-  employeeId: string,
-  companyId: string,
-  delayMinutes: number,
-  expectedTime: string,
-  actualTime: string
-): Notification {
-  return {
-    id: generateNotificationId(),
-    type: 'LATE_ARRIVAL',
-    priority: 'MEDIUM',
-    title: `Atraso Detectado`,
-    message: `Funcionário chegou ${delayMinutes} minutos atrasado (${expectedTime} → ${actualTime})`,
-    recipientId: 'manager', // Em produção, seria o ID do gestor
-    recipientType: 'MANAGER',
-    companyId,
-    employeeId,
-    metadata: {
-      delayMinutes,
-      expectedTime,
-      actualTime,
-    },
-    read: false,
-    createdAt: new Date().toISOString(),
-    actionUrl: `/funcionarios/${employeeId}`,
-    actionText: 'Ver registro',
-  };
-}
-
-/**
- * Cria notificação de saída antecipada
- */
-export function createEarlyDepartureNotification(
-  employeeId: string,
-  companyId: string,
-  earlyMinutes: number,
-  expectedTime: string,
-  actualTime: string
-): Notification {
-  return {
-    id: generateNotificationId(),
-    type: 'EARLY_DEPARTURE',
-    priority: 'MEDIUM',
-    title: `Saída Antecipada`,
-    message: `Funcionário saiu ${earlyMinutes} minutos antes (${expectedTime} → ${actualTime})`,
-    recipientId: 'manager', // Em produção, seria o ID do gestor
-    recipientType: 'MANAGER',
-    companyId,
-    employeeId,
-    metadata: {
-      earlyMinutes,
-      expectedTime,
-      actualTime,
-    },
-    read: false,
-    createdAt: new Date().toISOString(),
-    actionUrl: `/funcionarios/${employeeId}`,
-    actionText: 'Ver registro',
-  };
-}
-
-/**
- * Cria notificação de registro ausente
- */
-export function createMissingRecordNotification(
-  employeeId: string,
-  companyId: string,
-  date: string,
-  missingType: RecordType
-): Notification {
-  const getTypeLabel = (type: RecordType): string => {
-    switch (type) {
-      case 'ENTRY': return 'entrada';
-      case 'EXIT': return 'saída';
-      case 'BREAK_START': return 'início do intervalo';
-      case 'BREAK_END': return 'fim do intervalo';
-      default: return type;
-    }
-  };
-
-  return {
-    id: generateNotificationId(),
-    type: 'MISSING_RECORD',
-    priority: 'HIGH',
-    title: `Registro Ausente`,
-    message: `Registro de ${getTypeLabel(missingType)} ausente em ${new Date(date).toLocaleDateString('pt-BR')}`,
-    recipientId: 'employee', // Em produção, seria o ID do funcionário
-    recipientType: 'EMPLOYEE',
-    companyId,
-    employeeId,
-    metadata: {
-      date,
-      missingType,
-    },
-    read: false,
-    createdAt: new Date().toISOString(),
-    actionUrl: `/bater-ponto`,
-    actionText: 'Registrar ponto',
-  };
-}
-
-/**
- * Cria notificação de resumo diário
- */
-export function createDailySummaryNotification(
-  companyId: string,
-  date: string,
-  summary: {
-    totalEmployees: number;
-    presentEmployees: number;
-    absentEmployees: number;
-    lateEmployees: number;
-    overtimeEmployees: number;
-  }
-): Notification {
-  return {
-    id: generateNotificationId(),
-    type: 'DAILY_SUMMARY',
-    priority: 'LOW',
-    title: `Resumo Diário - ${new Date(date).toLocaleDateString('pt-BR')}`,
-    message: `${summary.presentEmployees}/${summary.totalEmployees} presentes, ${summary.lateEmployees} atrasos, ${summary.overtimeEmployees} horas extras`,
-    recipientId: 'manager', // Em produção, seria o ID do gestor
-    recipientType: 'MANAGER',
-    companyId,
-    metadata: {
-      date,
-      summary,
-    },
-    read: false,
-    createdAt: new Date().toISOString(),
-    actionUrl: `/relatorios`,
-    actionText: 'Ver relatório completo',
-  };
-}
-
-/**
- * Simula envio de notificação via WebSocket
- */
-export async function sendNotification(notification: Notification): Promise<void> {
-  // Em produção, isso seria enviado via WebSocket
-  console.log('Enviando notificação:', notification);
+  userId?: string,
+  employeeId?: string
+): Promise<Notification> {
+  const templateData = NOTIFICATION_TEMPLATES[template];
   
-  // Simula delay de rede
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  // Em produção, seria:
-  // await websocket.send(JSON.stringify(notification));
-}
+  let title = templateData.title;
+  let message = templateData.message;
 
-/**
- * Marca notificação como lida
- */
-export async function markNotificationAsRead(notificationId: string): Promise<void> {
-  // Em produção, isso seria salvo no banco
-  console.log('Marcando notificação como lida:', notificationId);
-}
+  // Substituir variáveis
+  Object.entries(variables).forEach(([key, value]) => {
+    title = title.replace(`{${key}}`, String(value));
+    message = message.replace(`{${key}}`, String(value));
+  });
 
-/**
- * Busca notificações do usuário
- */
-export async function getUserNotifications(
-  userId: string,
-  limit: number = 50,
-  offset: number = 0
-): Promise<{ notifications: Notification[]; total: number }> {
-  // Em produção, isso seria buscado do banco
-  // Por enquanto, retorna dados simulados
-  const mockNotifications: Notification[] = [
-    createTimeRecordSuccessNotification(
-      {
-        id: '1',
-        type: 'ENTRY',
-        timestamp: new Date().toISOString(),
-        hash: 'hash1',
-        createdAt: new Date().toISOString(),
-        userId,
-        employeeId: 'emp1',
-        companyId: 'comp1',
-      },
-      'João Silva',
-      'Empresa ABC'
-    ),
-  ];
-
-  return {
-    notifications: mockNotifications.slice(offset, offset + limit),
-    total: mockNotifications.length,
-  };
-}
-
-/**
- * Deleta notificações antigas
- */
-export async function cleanupOldNotifications(daysToKeep: number = 30): Promise<void> {
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-  
-  // Em produção, isso deletaria notificações antigas do banco
-  console.log('Limpando notificações antigas antes de:', cutoffDate.toISOString());
+  return createNotification({
+    companyId,
+    userId,
+    employeeId,
+    type: templateData.type,
+    title,
+    message,
+    priority: templateData.priority,
+    category: templateData.category
+  });
 } 

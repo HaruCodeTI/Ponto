@@ -1,143 +1,99 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { 
-  getUserNotifications, 
-  markNotificationAsRead, 
-  sendNotification,
-  Notification,
-  NotificationType
-} from "@/lib/notifications";
+  createNotification, 
+  findNotifications 
+} from '@/lib/notifications';
 
-/**
- * GET - Buscar notificações do usuário
- */
-export async function GET(req: NextRequest): Promise<NextResponse> {
+export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
-    const unreadOnly = searchParams.get('unreadOnly') === 'true';
-
-    if (!userId) {
-      return NextResponse.json({ 
-        success: false, 
-        error: "ID do usuário é obrigatório" 
-      }, { status: 400 });
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const result = await getUserNotifications(userId, limit, offset);
-    
-    // Filtra apenas não lidas se solicitado
-    const notifications = unreadOnly 
-      ? result.notifications.filter(n => !n.read)
-      : result.notifications;
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        notifications,
-        total: unreadOnly ? notifications.length : result.total,
-        unreadCount: result.notifications.filter(n => !n.read).length,
-      }
-    });
-
-  } catch (error) {
-    console.error("Erro ao buscar notificações:", error);
-    return NextResponse.json({ 
-      success: false, 
-      error: "Erro interno do servidor" 
-    }, { status: 500 });
-  }
-}
-
-/**
- * POST - Enviar notificação genérica
- */
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  try {
-    const body = await req.json();
+    const body = await request.json();
     const { 
-      type, 
-      recipientId, 
       companyId, 
+      userId, 
       employeeId, 
+      type, 
       title, 
       message, 
-      metadata,
-      actionUrl,
-      actionText 
+      priority, 
+      category, 
+      metadata, 
+      expiresAt 
     } = body;
 
-    // Validação básica
-    if (!type || !recipientId || !companyId || !title || !message) {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Dados obrigatórios faltando" 
-      }, { status: 400 });
+    if (!companyId || !type || !title || !message || !priority || !category) {
+      return NextResponse.json(
+        { error: 'Dados obrigatórios não fornecidos' },
+        { status: 400 }
+      );
     }
 
-    // Cria notificação
-    const notification: Notification = {
-      id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-      type: type as NotificationType,
-      priority: 'MEDIUM',
+    const notification = await createNotification({
+      companyId,
+      userId,
+      employeeId,
+      type,
       title,
       message,
-      recipientId,
-      recipientType: 'EMPLOYEE', // Em produção, seria determinado pelo contexto
-      companyId,
-      employeeId,
+      priority,
+      category,
       metadata,
-      read: false,
-      createdAt: new Date().toISOString(),
-      actionUrl,
-      actionText,
-    };
+      expiresAt: expiresAt ? new Date(expiresAt) : undefined
+    });
 
-    // Envia notificação
-    await sendNotification(notification);
-
-    return NextResponse.json({ 
-      success: true, 
-      data: notification 
-    }, { status: 201 });
-
+    return NextResponse.json(notification, { status: 201 });
   } catch (error) {
-    console.error("Erro ao enviar notificação:", error);
-    return NextResponse.json({ 
-      success: false, 
-      error: "Erro interno do servidor" 
-    }, { status: 500 });
+    console.error('Erro ao criar notificação:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Erro interno do servidor' },
+      { status: 500 }
+    );
   }
 }
 
-/**
- * PUT - Marcar notificação como lida
- */
-export async function PUT(req: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest) {
   try {
-    const body = await req.json();
-    const { notificationId } = body;
-
-    if (!notificationId) {
-      return NextResponse.json({ 
-        success: false, 
-        error: "ID da notificação é obrigatório" 
-      }, { status: 400 });
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    await markNotificationAsRead(notificationId);
+    const { searchParams } = new URL(request.url);
+    const companyId = searchParams.get('companyId');
+    const userId = searchParams.get('userId');
+    const employeeId = searchParams.get('employeeId');
+    const type = searchParams.get('type');
+    const priority = searchParams.get('priority');
+    const category = searchParams.get('category');
+    const isRead = searchParams.get('isRead');
+    const isArchived = searchParams.get('isArchived');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Notificação marcada como lida" 
-    });
+    const filters: any = {};
+    if (companyId) filters.companyId = companyId;
+    if (userId) filters.userId = userId;
+    if (employeeId) filters.employeeId = employeeId;
+    if (type) filters.type = type;
+    if (priority) filters.priority = priority;
+    if (category) filters.category = category;
+    if (isRead !== null) filters.isRead = isRead === 'true';
+    if (isArchived !== null) filters.isArchived = isArchived === 'true';
 
+    const result = await findNotifications(filters, page, limit);
+
+    return NextResponse.json(result);
   } catch (error) {
-    console.error("Erro ao marcar notificação:", error);
-    return NextResponse.json({ 
-      success: false, 
-      error: "Erro interno do servidor" 
-    }, { status: 500 });
+    console.error('Erro ao buscar notificações:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
   }
 } 

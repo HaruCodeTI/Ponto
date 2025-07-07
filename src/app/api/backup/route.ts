@@ -1,159 +1,70 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { 
-  generateDatabaseBackup, 
-  restoreDatabaseBackup, 
-  listBackups, 
-  getBackupPath,
-  BackupResult,
-  RestoreResult 
-} from "@/lib/backup";
-import { createSystemAuditLog } from "@/lib/audit-logs";
-import fs from "fs";
+  createBackup, 
+  findBackups 
+} from '@/lib/backup';
 
-export async function GET() {
+export async function POST(request: NextRequest) {
   try {
-    const backups = listBackups();
-    
-    return NextResponse.json({
-      success: true,
-      backups: backups.map(file => ({
-        fileName: file,
-        size: fs.statSync(getBackupPath(file)).size,
-        createdAt: fs.statSync(getBackupPath(file)).birthtime.toISOString(),
-      })),
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { companyId, type, retentionDays, compression, encryption } = body;
+
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'ID da empresa é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    const backup = await createBackup(companyId, type, {
+      retentionDays,
+      compression,
+      encryption
     });
-  } catch {
+
+    return NextResponse.json(backup, { status: 201 });
+  } catch (error) {
+    console.error('Erro ao criar backup:', error);
     return NextResponse.json(
-      { success: false, error: "Erro ao listar backups" },
+      { error: error instanceof Error ? error.message : 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const { action, fileName } = await request.json();
-    
-    if (action === "create") {
-      const result: BackupResult = await generateDatabaseBackup();
-      
-      if (result.success) {
-        await createSystemAuditLog({
-          userId: "system",
-          employeeId: "system", 
-          companyId: "system",
-          action: "BACKUP_COMPLETE",
-          status: "SUCCESS",
-          details: `Backup criado: ${result.filePath}`,
-        });
-        
-        return NextResponse.json({
-          success: true,
-          message: "Backup criado com sucesso",
-          filePath: result.filePath,
-        });
-      } else {
-        await createSystemAuditLog({
-          userId: "system",
-          employeeId: "system",
-          companyId: "system", 
-          action: "BACKUP_START",
-          status: "FAILED",
-          details: `Erro ao criar backup: ${result.error}`,
-        });
-        
-        return NextResponse.json(
-          { success: false, error: result.error },
-          { status: 500 }
-        );
-      }
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
-    
-    if (action === "restore" && fileName) {
-      const result: RestoreResult = await restoreDatabaseBackup(getBackupPath(fileName));
-      
-      if (result.success) {
-        await createSystemAuditLog({
-          userId: "system",
-          employeeId: "system",
-          companyId: "system",
-          action: "BACKUP_COMPLETE", 
-          status: "SUCCESS",
-          details: `Backup restaurado: ${fileName}`,
-        });
-        
-        return NextResponse.json({
-          success: true,
-          message: "Backup restaurado com sucesso",
-        });
-      } else {
-        await createSystemAuditLog({
-          userId: "system",
-          employeeId: "system",
-          companyId: "system",
-          action: "BACKUP_START",
-          status: "FAILED", 
-          details: `Erro ao restaurar backup: ${result.error}`,
-        });
-        
-        return NextResponse.json(
-          { success: false, error: result.error },
-          { status: 500 }
-        );
-      }
-    }
-    
-    return NextResponse.json(
-      { success: false, error: "Ação inválida" },
-      { status: 400 }
-    );
-      } catch {
-      return NextResponse.json(
-        { success: false, error: "Erro interno do servidor" },
-        { status: 500 }
-      );
-    }
-}
 
-export async function DELETE(request: NextRequest) {
-  try {
     const { searchParams } = new URL(request.url);
-    const fileName = searchParams.get("fileName");
-    
-    if (!fileName) {
-      return NextResponse.json(
-        { success: false, error: "Nome do arquivo é obrigatório" },
-        { status: 400 }
-      );
-    }
-    
-    const filePath = getBackupPath(fileName);
-    
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json(
-        { success: false, error: "Arquivo não encontrado" },
-        { status: 404 }
-      );
-    }
-    
-    fs.unlinkSync(filePath);
-    
-    await createSystemAuditLog({
-      userId: "system",
-      employeeId: "system",
-      companyId: "system",
-      action: "BACKUP_COMPLETE",
-      status: "SUCCESS", 
-      details: `Backup deletado: ${fileName}`,
-    });
-    
-    return NextResponse.json({
-      success: true,
-      message: "Backup deletado com sucesso",
-    });
-  } catch {
+    const companyId = searchParams.get('companyId');
+    const type = searchParams.get('type');
+    const status = searchParams.get('status');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+
+    const filters: any = {};
+    if (companyId) filters.companyId = companyId;
+    if (type) filters.type = type;
+    if (status) filters.status = status;
+
+    const result = await findBackups(filters, page, limit);
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error('Erro ao buscar backups:', error);
     return NextResponse.json(
-      { success: false, error: "Erro ao deletar backup" },
+      { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }

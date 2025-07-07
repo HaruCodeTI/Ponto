@@ -1,3 +1,4 @@
+import { Metadata } from 'next';
 import { TimeRecordReportTable } from "@/components/time-record/time-record-report-table";
 import { MonthlyReport } from "@/components/reports/monthly-report";
 import { HoursReport } from "@/components/reports/hours-report";
@@ -11,7 +12,14 @@ import { AFDReport } from "@/components/reports/afd-report";
 import { EmailScheduler } from "@/components/reports/email-scheduler";
 import { FormatConfig } from "@/components/reports/format-config";
 import { AdvancedScheduler } from "@/components/reports/advanced-scheduler";
+import { TimeSheetMirrorViewer } from "@/components/time-sheet-mirror/time-sheet-mirror-viewer";
+import { AFDExportViewer } from "@/components/afd-export/afd-export-viewer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+export const metadata: Metadata = {
+  title: 'Relatórios | Sistema de Ponto',
+  description: 'Gerencie relatórios, agendamentos e configurações de formato',
+};
 
 export default function RelatoriosPage() {
   return (
@@ -24,7 +32,7 @@ export default function RelatoriosPage() {
       </div>
 
       <Tabs defaultValue="individual" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-12">
+        <TabsList className="grid w-full grid-cols-13">
           <TabsTrigger value="individual">Individual</TabsTrigger>
           <TabsTrigger value="monthly">Mensal</TabsTrigger>
           <TabsTrigger value="hours">Horas</TabsTrigger>
@@ -33,6 +41,7 @@ export default function RelatoriosPage() {
           <TabsTrigger value="productivity">Produtividade</TabsTrigger>
           <TabsTrigger value="mirror">Espelho de Ponto</TabsTrigger>
           <TabsTrigger value="afd">AFD</TabsTrigger>
+          <TabsTrigger value="afd-export">Exportação AFD</TabsTrigger>
           <TabsTrigger value="scheduler">Agendamento</TabsTrigger>
           <TabsTrigger value="email">Email</TabsTrigger>
           <TabsTrigger value="format">Formatos</TabsTrigger>
@@ -64,11 +73,15 @@ export default function RelatoriosPage() {
         </TabsContent>
 
         <TabsContent value="mirror" className="space-y-6">
-          <MirrorReport companyId="1" />
+          <TimeSheetMirrorViewer />
         </TabsContent>
 
         <TabsContent value="afd" className="space-y-6">
           <AFDReport companyId="1" />
+        </TabsContent>
+
+        <TabsContent value="afd-export" className="space-y-6">
+          <AFDExportViewer />
         </TabsContent>
 
         <TabsContent value="scheduler" className="space-y-6">

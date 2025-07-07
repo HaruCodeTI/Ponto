@@ -302,198 +302,230 @@ model BiometricData {
 }
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  userId     String
-  userEmail  String
-  action     String
-  resource   String
-  resourceId String?
-  details    String?
-  ipAddress  String?
-  userAgent  String?
-  timestamp  DateTime @default(now())
+  id            String      @id @default(cuid())
+  companyId     String      // Empresa
+  userId        String?     // Usuário que executou a ação
+  employeeId    String?     // Funcionário relacionado
+  sessionId     String?     // Sessão do usuário
+  action        String      // Ação executada
+  category      AuditCategory // Categoria da ação
+  severity      AuditSeverity // Severidade do evento
+  status        AuditStatus // Status da ação
+  resourceType  String?     // Tipo de recurso (User, Employee, etc.)
+  resourceId    String?     // ID do recurso afetado
+  oldValues     Json?       // Valores anteriores
+  newValues     Json?       // Novos valores
+  metadata      Json        // Metadados adicionais
+  ipAddress     String?     // Endereço IP
+  userAgent     String?     // User Agent do navegador
+  location      String?     // Localização (se disponível)
+  timestamp     DateTime    @default(now())
+  createdAt     DateTime    @default(now())
 
+  @@index([companyId])
   @@index([userId])
   @@index([action])
-  @@index([resource])
-  @@index([timestamp])
-}
-
-model SystemLog {
-  id          String   @id @default(cuid())
-  timestamp   DateTime @default(now())
-  level       LogLevel
-  category    LogCategory
-  action      String   // Ação realizada
-  status      LogStatus
-  
-  // Contexto do usuário
-  userId      String?
-  employeeId  String?
-  companyId   String?
-  
-  // Informações do dispositivo
-  deviceType  DeviceType
-  userAgent   String?
-  ipAddress   String?
-  platform    String?
-  isOnline    Boolean  @default(true)
-  
-  // Detalhes da operação
-  details     String   // Descrição detalhada
-  errorMessage String? // Mensagem de erro (se aplicável)
-  stackTrace  String?  // Stack trace (se aplicável)
-  
-  // Dados da operação
-  operationData Json?  // Dados da operação em JSON
-  metadata     Json?   // Metadados adicionais
-  
-  // Performance
-  duration    Int?     // Duração em milissegundos
-  memoryUsage Int?     // Uso de memória em MB
-  
-  // Sincronização
-  syncId      String?  // ID da sincronização relacionada
-  retryCount  Int      @default(0)
-  maxRetries  Int      @default(3)
-  
-  // Compliance
-  retentionPeriod Int  @default(1825) // 5 anos em dias
-  isComplianceRequired Boolean @default(true)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([timestamp])
-  @@index([level])
   @@index([category])
-  @@index([status])
-  @@index([userId])
-  @@index([employeeId])
-  @@index([companyId])
-  @@index([deviceType])
-  @@index([syncId])
+  @@index([severity])
+  @@index([timestamp])
+  @@index([resourceType, resourceId])
 }
 
-model SyncLog {
-  id          String   @id @default(cuid())
-  timestamp   DateTime @default(now())
-  syncType    SyncType
-  status      SyncStatus
-  entityType  EntityType
-  entityId    String?
-  
-  // Contexto do usuário
-  userId      String?
-  employeeId  String?
-  companyId   String?
-  
-  // Informações do dispositivo
-  deviceType  DeviceType
-  userAgent   String?
-  ipAddress   String?
-  platform    String?
-  connectionType String?
-  isOnline    Boolean  @default(true)
-  
-  // Dados da sincronização
-  recordsCount    Int     @default(0)
-  bytesTransferred Int    @default(0)
-  startTime       DateTime
-  endTime         DateTime?
-  duration        Int?     // Duração em milissegundos
-  
-  // Conflitos e erros
-  conflictsCount  Int     @default(0)
-  duplicatesCount Int     @default(0)
-  errorsCount     Int     @default(0)
-  
-  // Detalhes dos conflitos
-  conflicts       Json?   // Array de conflitos
-  errors          Json?   // Array de erros
-  
-  // Metadados da sincronização
-  syncVersion     String  @default("1.0")
-  protocol        String  @default("REST")
-  compression     Boolean @default(false)
-  encryption      Boolean @default(true)
-  batchSize       Int     @default(100)
-  retryCount      Int     @default(0)
-  maxRetries      Int     @default(3)
-  tags            String[] // Tags para categorização
-  
-  // Compliance
-  retentionPeriod Int     @default(1825) // 5 anos em dias
-  isComplianceRequired Boolean @default(true)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([timestamp])
-  @@index([syncType])
-  @@index([status])
-  @@index([entityType])
-  @@index([userId])
-  @@index([employeeId])
-  @@index([companyId])
-  @@index([deviceType])
+enum AuditCategory {
+  AUTHENTICATION
+  AUTHORIZATION
+  DATA_ACCESS
+  DATA_MODIFICATION
+  SYSTEM_CONFIG
+  SECURITY
+  COMPLIANCE
+  BACKUP_RESTORE
+  REPORT_GENERATION
+  USER_MANAGEMENT
+  EMPLOYEE_MANAGEMENT
+  TIME_RECORD
+  PAYROLL
+  NOTIFICATION
+  API_ACCESS
+  FILE_OPERATION
+  DATABASE_OPERATION
+  NETWORK_ACCESS
+  PRIVACY
+  OTHER
 }
 
-model UsageLog {
-  id          String   @id @default(cuid())
-  timestamp   DateTime @default(now())
-  action      String   // Ação realizada
-  resource    String   // Recurso acessado
-  resourceId  String?  // ID do recurso específico
-  
-  // Contexto do usuário
-  userId      String
-  employeeId  String?
-  companyId   String
-  
-  // Informações da sessão
-  sessionId   String?
-  requestId   String?
-  
-  // Informações do dispositivo
-  deviceType  DeviceType
-  userAgent   String?
-  ipAddress   String?
-  platform    String?
-  isOnline    Boolean  @default(true)
-  
-  // Detalhes da operação
-  method      String?  // Método HTTP (se aplicável)
-  endpoint    String?  // Endpoint acessado (se aplicável)
-  statusCode  Int?     // Código de status (se aplicável)
-  responseTime Int?    // Tempo de resposta em ms
-  
-  // Dados da operação
-  requestData Json?    // Dados da requisição
-  responseData Json?   // Dados da resposta
-  metadata    Json?    // Metadados adicionais
-  
-  // Performance
-  duration    Int?     // Duração em milissegundos
-  memoryUsage Int?     // Uso de memória em MB
-  
-  // Compliance
-  retentionPeriod Int  @default(1825) // 5 anos em dias
-  isComplianceRequired Boolean @default(true)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+enum AuditSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
 
-  @@index([timestamp])
-  @@index([action])
-  @@index([resource])
-  @@index([userId])
-  @@index([employeeId])
+enum AuditStatus {
+  SUCCESS
+  FAILURE
+  WARNING
+  PENDING
+  CANCELLED
+}
+
+model SecurityAlert {
+  id            String           @id @default(cuid())
+  companyId     String           // Empresa
+  type          SecurityAlertType // Tipo de alerta
+  severity      SecuritySeverity // Severidade
+  status        AlertStatus      // Status do alerta
+  title         String           // Título do alerta
+  description   String           // Descrição detalhada
+  source        String           // Fonte do alerta
+  metadata      Json             // Metadados do alerta
+  acknowledgedBy String?         // Usuário que reconheceu
+  acknowledgedAt DateTime?       // Quando foi reconhecido
+  resolvedBy    String?          // Usuário que resolveu
+  resolvedAt    DateTime?        // Quando foi resolvido
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
   @@index([companyId])
-  @@index([deviceType])
-  @@index([sessionId])
-  @@index([method])
-  @@index([statusCode])
+  @@index([type])
+  @@index([severity])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum SecurityAlertType {
+  SUSPICIOUS_LOGIN
+  MULTIPLE_FAILED_ATTEMPTS
+  UNUSUAL_ACCESS_PATTERN
+  DATA_EXPORT
+  CONFIGURATION_CHANGE
+  PRIVILEGE_ESCALATION
+  DATA_BREACH_ATTEMPT
+  MALWARE_DETECTION
+  NETWORK_INTRUSION
+  COMPLIANCE_VIOLATION
+  AUDIT_FAILURE
+  BACKUP_FAILURE
+  SYSTEM_ERROR
+  PERFORMANCE_ISSUE
+  OTHER
+}
+
+enum SecuritySeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  FALSE_POSITIVE
+}
+
+model DataRetentionPolicy {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  dataType      String   // Tipo de dados
+  retentionDays Int      // Dias de retenção
+  isActive      Boolean  @default(true)
+  description   String?  // Descrição da política
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([companyId, dataType])
+  @@index([companyId])
+  @@index([isActive])
+}
+
+model PrivacyConsent {
+  id            String           @id @default(cuid())
+  companyId     String           // Empresa
+  userId        String           // Usuário
+  consentType   ConsentType      // Tipo de consentimento
+  status        ConsentStatus    // Status do consentimento
+  grantedAt     DateTime?        // Quando foi concedido
+  revokedAt     DateTime?        // Quando foi revogado
+  ipAddress     String?          // IP do usuário
+  userAgent     String?          // User Agent
+  metadata      Json             // Metadados
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([consentType])
+  @@index([status])
+  @@index([grantedAt])
+}
+
+enum ConsentType {
+  DATA_COLLECTION
+  DATA_PROCESSING
+  DATA_SHARING
+  MARKETING
+  COOKIES
+  ANALYTICS
+  THIRD_PARTY
+  LEGAL_BASIS
+  OTHER
+}
+
+enum ConsentStatus {
+  GRANTED
+  DENIED
+  REVOKED
+  EXPIRED
+  PENDING
+}
+
+model AuditReport {
+  id            String        @id @default(cuid())
+  companyId     String        // Empresa
+  reportType    AuditReportType // Tipo de relatório
+  period        String        // Período do relatório
+  status        ReportStatus  // Status do relatório
+  generatedBy   String        // Usuário que gerou
+  generatedAt   DateTime      @default(now())
+  filePath      String?       // Caminho do arquivo
+  fileSize      Int?          // Tamanho do arquivo
+  metadata      Json          // Metadados do relatório
+  createdAt     DateTime      @default(now())
+
+  @@index([companyId])
+  @@index([reportType])
+  @@index([period])
+  @@index([status])
+  @@index([generatedAt])
+}
+
+enum AuditReportType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+  COMPLIANCE
+  SECURITY
+  PRIVACY
+  DATA_ACCESS
+  USER_ACTIVITY
+  SYSTEM_ACTIVITY
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  GENERATING
+  COMPLETED
+  FAILED
+  EXPIRED
 }
 
 enum UserRole {
@@ -834,18 +866,17 @@ enum BackupType {
   FULL
   INCREMENTAL
   DIFFERENTIAL
-  SELECTIVE
-  COMPLIANCE
+  SCHEMA_ONLY
+  DATA_ONLY
 }
 
 enum BackupStatus {
   PENDING
-  IN_PROGRESS
-  SUCCESS
+  PROCESSING
+  COMPLETED
   FAILED
-  CANCELLED
-  VERIFIED
   EXPIRED
+  RESTORING
 }
 
 enum StorageType {
@@ -855,4 +886,1143 @@ enum StorageType {
   CLOUD_STORAGE
   ARCHIVE_STORAGE
   COMPLIANCE_STORAGE
+}
+
+model RestoreOperation {
+  id            String   @id @default(cuid())
+  timestamp     DateTime @default(now())
+  status        RestoreStatus
+  backupId      String   // Referência ao BackupOperation
+  entityTypes   String[] // Entidades restauradas
+  dateRange     Json?    // Período restaurado {startDate, endDate}
+  fileName      String?  // Arquivo de origem
+  fileHash      String?  // Hash do arquivo
+  restoredCount Int      @default(0)
+  error         String?  // Erro, se houver
+  duration      Int?     // Duração em ms
+  companyId     String?  // Empresa relacionada
+  userId        String?  // Usuário que iniciou
+  isComplianceRequired Boolean @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([timestamp])
+  @@index([status])
+  @@index([companyId])
+}
+
+enum RestoreStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+  PARTIAL
+  CANCELLED
+  VERIFIED
+}
+
+model RetentionPolicy {
+  id                String   @id @default(cuid())
+  name              String   // Nome da política
+  description       String?  // Descrição da política
+  entityType        String   // Tipo de entidade (TimeRecord, SystemLog, etc.)
+  retentionPeriod   Int      // Período de retenção em dias
+  isActive          Boolean  @default(true)
+  companyId         String?  // Empresa específica (null = global)
+  createdBy         String   // Usuário que criou
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([entityType])
+  @@index([companyId])
+  @@index([isActive])
+}
+
+model DataPurge {
+  id            String   @id @default(cuid())
+  timestamp     DateTime @default(now())
+  policyId      String   // Referência à política
+  entityType    String   // Tipo de entidade
+  status        PurgeStatus
+  recordsCount  Int      @default(0) // Número de registros processados
+  purgedCount   Int      @default(0) // Número de registros expurgados
+  error         String?  // Erro, se houver
+  duration      Int?     // Duração em ms
+  companyId     String?  // Empresa relacionada
+  executedBy    String?  // Usuário que executou
+  isComplianceRequired Boolean @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([timestamp])
+  @@index([policyId])
+  @@index([entityType])
+  @@index([status])
+  @@index([companyId])
+}
+
+enum PurgeStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+  PARTIAL
+  CANCELLED
+}
+
+model TimeRecordReceipt {
+  id            String   @id @default(cuid())
+  timestamp     DateTime @default(now())
+  timeRecordId  String   // Referência ao registro de ponto
+  employeeId    String   // Funcionário
+  companyId     String   // Empresa
+  receiptType   ReceiptType // Tipo de comprovante
+  receiptData   Json     // Dados do comprovante (estrutura completa)
+  hash          String   // Hash para verificação de integridade
+  qrCode        String?  // Código QR para validação
+  isVerified    Boolean  @default(false) // Se foi verificado
+  verifiedAt    DateTime? // Quando foi verificado
+  verifiedBy    String?  // Quem verificou
+  isComplianceRequired Boolean @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([timestamp])
+  @@index([timeRecordId])
+  @@index([employeeId])
+  @@index([companyId])
+  @@index([receiptType])
+  @@index([isVerified])
+}
+
+enum ReceiptType {
+  CLOCK_IN
+  CLOCK_OUT
+  BREAK_START
+  BREAK_END
+  ADJUSTMENT
+  VERIFICATION
+}
+
+model TimeSheetMirror {
+  id            String   @id @default(cuid())
+  employeeId    String   // Funcionário
+  companyId     String   // Empresa
+  month         Int      // Mês (1-12)
+  year          Int      // Ano
+  status        MirrorStatus // Status do espelho
+  totalWorkHours Decimal  @db.Decimal(10, 2) // Total de horas trabalhadas
+  totalBreakHours Decimal @db.Decimal(10, 2) // Total de horas de intervalo
+  totalOvertimeHours Decimal @db.Decimal(10, 2) // Total de horas extras
+  totalAbsences Int      // Total de faltas
+  totalDelays   Int      // Total de atrasos
+  workDays      Int      // Dias trabalhados
+  totalDays     Int      // Total de dias no mês
+  mirrorData    Json     // Dados completos do espelho (estrutura detalhada)
+  adjustments   Json?    // Ajustes aplicados
+  notes         String?  // Observações
+  approvedBy    String?  // Quem aprovou
+  approvedAt    DateTime? // Quando foi aprovado
+  isComplianceRequired Boolean @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([employeeId, month, year])
+  @@index([employeeId])
+  @@index([companyId])
+  @@index([month, year])
+  @@index([status])
+  @@index([approvedAt])
+}
+
+enum MirrorStatus {
+  DRAFT
+  GENERATED
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  EXPORTED
+}
+
+model AFDExport {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  employeeId    String?  // Funcionário específico (opcional)
+  startDate     DateTime // Data inicial do período
+  endDate       DateTime // Data final do período
+  fileName      String   // Nome do arquivo gerado
+  filePath      String   // Caminho do arquivo no servidor
+  fileSize      Int      // Tamanho do arquivo em bytes
+  recordCount   Int      // Número de registros exportados
+  status        AFDStatus // Status da exportação
+  afdVersion    String   // Versão do formato AFD
+  checksum      String   // Checksum do arquivo para validação
+  metadata      Json     // Metadados da exportação
+  isComplianceRequired Boolean @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([employeeId])
+  @@index([startDate, endDate])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum AFDStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  companyId   String           // Empresa
+  userId      String?          // Usuário específico (opcional)
+  employeeId  String?          // Funcionário específico (opcional)
+  type        NotificationType // Tipo da notificação
+  title       String           // Título da notificação
+  message     String           // Mensagem da notificação
+  priority    NotificationPriority // Prioridade
+  category    String           // Categoria (ponto, relatório, sistema, etc.)
+  metadata    Json?            // Dados adicionais
+  isRead      Boolean          @default(false) // Se foi lida
+  isArchived  Boolean          @default(false) // Se foi arquivada
+  readAt      DateTime?        // Quando foi lida
+  expiresAt   DateTime?        // Data de expiração
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([employeeId])
+  @@index([type])
+  @@index([priority])
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([expiresAt])
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  ALERT
+  REMINDER
+  APPROVAL
+  SYSTEM
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model NotificationPreference {
+  id                    String   @id @default(cuid())
+  companyId             String   // Empresa
+  userId                String?  // Usuário específico (opcional)
+  employeeId            String?  // Funcionário específico (opcional)
+  emailEnabled          Boolean  @default(true)
+  pushEnabled           Boolean  @default(true)
+  smsEnabled            Boolean  @default(false)
+  inAppEnabled          Boolean  @default(true)
+  categories            Json     // Categorias habilitadas
+  quietHours            Json?    // Horário silencioso
+  frequency             NotificationFrequency
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([companyId, userId, employeeId])
+  @@index([companyId])
+  @@index([userId])
+  @@index([employeeId])
+}
+
+enum NotificationFrequency {
+  IMMEDIATE
+  HOURLY
+  DAILY
+  WEEKLY
+}
+
+model Backup {
+  id            String      @id @default(cuid())
+  companyId     String      // Empresa
+  type          BackupType  // Tipo de backup
+  status        BackupStatus // Status do backup
+  fileName      String      // Nome do arquivo de backup
+  filePath      String      // Caminho do arquivo no servidor
+  fileSize      Int         // Tamanho do arquivo em bytes
+  checksum      String      // Checksum do arquivo para validação
+  metadata      Json        // Metadados do backup
+  retentionDays Int         @default(30) // Dias de retenção
+  expiresAt     DateTime    // Data de expiração
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([companyId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([expiresAt])
+}
+
+model BackupSchedule {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  type          BackupType // Tipo de backup
+  frequency     BackupFrequency // Frequência
+  time          String   // Horário (HH:mm)
+  days          Int[]    // Dias da semana (0-6)
+  isActive      Boolean  @default(true)
+  retentionDays Int      @default(30)
+  lastRun       DateTime? // Última execução
+  nextRun       DateTime? // Próxima execução
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([companyId, type])
+  @@index([companyId])
+  @@index([isActive])
+  @@index([nextRun])
+}
+
+enum BackupFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+model RestoreJob {
+  id            String        @id @default(cuid())
+  companyId     String        // Empresa
+  backupId      String        // Backup usado para restauração
+  status        RestoreStatus // Status da restauração
+  progress      Int           @default(0) // Progresso (0-100)
+  startedAt     DateTime      @default(now())
+  completedAt   DateTime?     // Quando foi concluída
+  errorMessage  String?       // Mensagem de erro se falhou
+  metadata      Json          // Metadados da restauração
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([companyId])
+  @@index([backupId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+model ExecutiveDashboard {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  name          String   // Nome do dashboard
+  description   String?  // Descrição
+  isDefault     Boolean  @default(false) // Dashboard padrão
+  isPublic      Boolean  @default(false) // Dashboard público
+  layout        Json     // Layout dos widgets
+  filters       Json     // Filtros aplicados
+  refreshInterval Int?   // Intervalo de atualização (minutos)
+  createdBy     String   // Usuário que criou
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([createdBy])
+  @@index([isDefault])
+}
+
+model DashboardWidget {
+  id            String   @id @default(cuid())
+  dashboardId   String   // Dashboard
+  widgetType    WidgetType // Tipo do widget
+  title         String   // Título do widget
+  description   String?  // Descrição
+  position      Json     // Posição no layout
+  size          Json     // Tamanho do widget
+  config        Json     // Configuração específica
+  dataSource    String   // Fonte de dados
+  refreshInterval Int?   // Intervalo de atualização
+  isVisible     Boolean  @default(true)
+  order         Int      // Ordem de exibição
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  dashboard     ExecutiveDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@index([dashboardId])
+  @@index([widgetType])
+  @@index([order])
+}
+
+enum WidgetType {
+  KPI_CARD
+  LINE_CHART
+  BAR_CHART
+  PIE_CHART
+  TABLE
+  GAUGE
+  HEATMAP
+  FUNNEL
+  SCATTER_PLOT
+  AREA_CHART
+  METRIC_GRID
+  ALERT_LIST
+  ACTIVITY_FEED
+  CUSTOM_HTML
+}
+
+model BusinessKPI {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  name          String   // Nome do KPI
+  description   String?  // Descrição
+  category      KPICategory // Categoria
+  formula       String   // Fórmula de cálculo
+  unit          String?  // Unidade de medida
+  target        Float?   // Meta
+  threshold     Float?   // Limite de alerta
+  dataSource    String   // Fonte de dados
+  refreshInterval Int    @default(60) // Intervalo de atualização (minutos)
+  isActive      Boolean  @default(true)
+  isVisible     Boolean  @default(true)
+  metadata      Json     // Metadados adicionais
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([category])
+  @@index([isActive])
+}
+
+enum KPICategory {
+  PRODUCTIVITY
+  ATTENDANCE
+  OVERTIME
+  COMPLIANCE
+  SECURITY
+  FINANCIAL
+  OPERATIONAL
+  CUSTOMER
+  EMPLOYEE
+  SYSTEM
+}
+
+model KPIValue {
+  id            String   @id @default(cuid())
+  kpiId         String   // KPI
+  value         Float    // Valor calculado
+  target        Float?   // Meta no momento
+  threshold     Float?   // Limite no momento
+  period        String   // Período (YYYY-MM, YYYY-WW, etc.)
+  timestamp     DateTime @default(now())
+  metadata      Json     // Metadados do cálculo
+  createdAt     DateTime @default(now())
+
+  kpi           BusinessKPI @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+
+  @@index([kpiId])
+  @@index([period])
+  @@index([timestamp])
+}
+
+model ReportTemplate {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  name          String   // Nome do template
+  description   String?  // Descrição
+  type          ReportType // Tipo de relatório
+  format        ReportFormat // Formato de saída
+  schedule      Json?    // Agendamento
+  config        Json     // Configuração do relatório
+  isActive      Boolean  @default(true)
+  createdBy     String   // Usuário que criou
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([type])
+  @@index([isActive])
+}
+
+enum ReportType {
+  DAILY_SUMMARY
+  WEEKLY_REPORT
+  MONTHLY_REPORT
+  QUARTERLY_REPORT
+  YEARLY_REPORT
+  CUSTOM_PERIOD
+  REAL_TIME
+  AD_HOC
+  COMPLIANCE
+  AUDIT
+  FINANCIAL
+  OPERATIONAL
+}
+
+model GeneratedReport {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  templateId    String?  // Template usado
+  name          String   // Nome do relatório
+  type          ReportType // Tipo
+  format        ReportFormat // Formato
+  status        ReportStatus // Status
+  filePath      String?  // Caminho do arquivo
+  fileSize      Int?     // Tamanho do arquivo
+  downloadUrl   String?  // URL de download
+  metadata      Json     // Metadados
+  generatedBy   String   // Usuário que gerou
+  generatedAt   DateTime @default(now())
+  expiresAt     DateTime? // Data de expiração
+  createdAt     DateTime @default(now())
+
+  template      ReportTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([companyId])
+  @@index([templateId])
+  @@index([type])
+  @@index([status])
+  @@index([generatedAt])
+}
+
+model DataExport {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  name          String   // Nome da exportação
+  description   String?  // Descrição
+  dataSource    String   // Fonte de dados
+  filters       Json     // Filtros aplicados
+  columns       String[] // Colunas selecionadas
+  format        ExportFormat // Formato
+  status        ExportStatus // Status
+  filePath      String?  // Caminho do arquivo
+  fileSize      Int?     // Tamanho do arquivo
+  downloadUrl   String?  // URL de download
+  metadata      Json     // Metadados
+  requestedBy   String   // Usuário que solicitou
+  requestedAt   DateTime @default(now())
+  completedAt   DateTime? // Quando foi concluída
+  expiresAt     DateTime? // Data de expiração
+  createdAt     DateTime @default(now())
+
+  @@index([companyId])
+  @@index([status])
+  @@index([requestedAt])
+}
+
+enum ExportFormat {
+  CSV
+  EXCEL
+  JSON
+  XML
+  SQL
+  CUSTOM
+}
+
+enum ExportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+model BIIntegration {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  name          String   // Nome da integração
+  type          BIType   // Tipo de BI
+  config        Json     // Configuração
+  isActive      Boolean  @default(true)
+  lastSync      DateTime? // Última sincronização
+  syncInterval  Int      @default(60) // Intervalo de sincronização (minutos)
+  metadata      Json     // Metadados
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([type])
+  @@index([isActive])
+}
+
+enum BIType {
+  POWER_BI
+  TABLEAU
+  QLIK
+  LOOKER
+  METABASE
+  GRAFANA
+  CUSTOM
+}
+
+model ExternalAPI {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  name          String   // Nome da integração
+  description   String?  // Descrição
+  provider      String   // Provedor (ex: "stripe", "google", "microsoft")
+  apiType       APIType  // Tipo de API
+  baseUrl       String   // URL base da API
+  version       String   // Versão da API
+  config        Json     // Configuração da API
+  credentials   Json     // Credenciais (criptografadas)
+  isActive      Boolean  @default(true)
+  rateLimit     Json?    // Limites de taxa
+  lastSync      DateTime? // Última sincronização
+  syncInterval  Int      @default(60) // Intervalo de sincronização (minutos)
+  metadata      Json     // Metadados
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([provider])
+  @@index([isActive])
+}
+
+enum APIType {
+  REST
+  GRAPHQL
+  SOAP
+  WEBHOOK
+  OAUTH
+  API_KEY
+  BASIC_AUTH
+  JWT
+  CUSTOM
+}
+
+model APIEndpoint {
+  id            String   @id @default(cuid())
+  apiId         String   // API externa
+  name          String   // Nome do endpoint
+  path          String   // Caminho do endpoint
+  method        HTTPMethod // Método HTTP
+  description   String?  // Descrição
+  parameters    Json     // Parâmetros esperados
+  headers       Json     // Headers necessários
+  response      Json     // Estrutura da resposta
+  isActive      Boolean  @default(true)
+  rateLimit     Json?    // Limite específico do endpoint
+  timeout       Int      @default(30000) // Timeout em ms
+  retryConfig   Json     // Configuração de retry
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  api           ExternalAPI @relation(fields: [apiId], references: [id], onDelete: Cascade)
+
+  @@index([apiId])
+  @@index([method])
+  @@index([isActive])
+}
+
+enum HTTPMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+  HEAD
+  OPTIONS
+}
+
+model APIRequest {
+  id            String   @id @default(cuid())
+  apiId         String   // API externa
+  endpointId    String?  // Endpoint específico
+  method        HTTPMethod // Método HTTP
+  url           String   // URL completa
+  headers       Json     // Headers enviados
+  body          Json?    // Corpo da requisição
+  status        RequestStatus // Status da requisição
+  responseCode  Int?     // Código de resposta HTTP
+  responseBody  Json?    // Corpo da resposta
+  errorMessage  String?  // Mensagem de erro
+  duration      Int?     // Duração em ms
+  retryCount    Int      @default(0) // Número de tentativas
+  metadata      Json     // Metadados
+  requestedAt   DateTime @default(now())
+  completedAt   DateTime? // Quando foi concluída
+  createdAt     DateTime @default(now())
+
+  api           ExternalAPI @relation(fields: [apiId], references: [id], onDelete: Cascade)
+  endpoint      APIEndpoint? @relation(fields: [endpointId], references: [id])
+
+  @@index([apiId])
+  @@index([endpointId])
+  @@index([status])
+  @@index([requestedAt])
+}
+
+enum RequestStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  TIMEOUT
+  CANCELLED
+  RETRYING
+}
+
+model Webhook {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  name          String   // Nome do webhook
+  description   String?  // Descrição
+  url           String   // URL de destino
+  events        String[] // Eventos que disparam o webhook
+  secret        String   // Secret para validação
+  headers       Json     // Headers customizados
+  isActive      Boolean  @default(true)
+  retryConfig   Json     // Configuração de retry
+  timeout       Int      @default(30000) // Timeout em ms
+  metadata      Json     // Metadados
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([isActive])
+}
+
+model WebhookDelivery {
+  id            String   @id @default(cuid())
+  webhookId     String   // Webhook
+  event         String   // Evento que disparou
+  payload       Json     // Payload enviado
+  status        DeliveryStatus // Status da entrega
+  responseCode  Int?     // Código de resposta HTTP
+  responseBody  String?  // Corpo da resposta
+  errorMessage  String?  // Mensagem de erro
+  duration      Int?     // Duração em ms
+  retryCount    Int      @default(0) // Número de tentativas
+  deliveredAt   DateTime? // Quando foi entregue
+  createdAt     DateTime @default(now())
+
+  webhook       Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  RETRYING
+  CANCELLED
+}
+
+model DataSync {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  apiId         String   // API externa
+  name          String   // Nome da sincronização
+  description   String?  // Descrição
+  sourceTable   String   // Tabela de origem
+  targetTable   String   // Tabela de destino
+  mapping       Json     // Mapeamento de campos
+  schedule      Json     // Agendamento
+  lastSync      DateTime? // Última sincronização
+  nextSync      DateTime? // Próxima sincronização
+  status        SyncStatus // Status da sincronização
+  recordsSynced Int      @default(0) // Registros sincronizados
+  errorCount    Int      @default(0) // Contagem de erros
+  isActive      Boolean  @default(true)
+  metadata      Json     // Metadados
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  api           ExternalAPI @relation(fields: [apiId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([apiId])
+  @@index([status])
+  @@index([isActive])
+}
+
+enum SyncStatus {
+  IDLE
+  RUNNING
+  COMPLETED
+  FAILED
+  PAUSED
+  SCHEDULED
+}
+
+model APIRateLimit {
+  id            String   @id @default(cuid())
+  apiId         String   // API externa
+  window        String   // Janela de tempo (ex: "1m", "1h", "1d")
+  limit         Int      // Limite de requisições
+  remaining     Int      // Requisições restantes
+  resetAt       DateTime // Quando o limite é resetado
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  api           ExternalAPI @relation(fields: [apiId], references: [id], onDelete: Cascade)
+
+  @@index([apiId])
+  @@index([resetAt])
+}
+
+model APIMonitoring {
+  id            String   @id @default(cuid())
+  apiId         String   // API externa
+  metric        String   // Métrica (ex: "response_time", "error_rate", "availability")
+  value         Float    // Valor da métrica
+  timestamp     DateTime @default(now())
+  metadata      Json     // Metadados adicionais
+
+  api           ExternalAPI @relation(fields: [apiId], references: [id], onDelete: Cascade)
+
+  @@index([apiId])
+  @@index([metric])
+  @@index([timestamp])
+}
+
+model IntegrationLog {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  apiId         String?  // API externa (opcional)
+  webhookId     String?  // Webhook (opcional)
+  level         LogLevel // Nível do log
+  message       String   // Mensagem
+  details       Json?    // Detalhes adicionais
+  timestamp     DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  api           ExternalAPI? @relation(fields: [apiId], references: [id])
+  webhook       Webhook? @relation(fields: [webhookId], references: [id])
+
+  @@index([companyId])
+  @@index([apiId])
+  @@index([webhookId])
+  @@index([level])
+  @@index([timestamp])
+}
+
+model AIModel {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  name          String   // Nome do modelo
+  description   String?  // Descrição
+  type          ModelType // Tipo de modelo
+  version       String   // Versão do modelo
+  status        ModelStatus // Status do modelo
+  config        Json     // Configuração do modelo
+  metadata      Json     // Metadados do modelo
+  accuracy      Float?   // Precisão do modelo
+  lastTrained   DateTime? // Último treinamento
+  nextTraining  DateTime? // Próximo treinamento
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([type])
+  @@index([status])
+  @@index([isActive])
+}
+
+enum ModelType {
+  ANOMALY_DETECTION
+  PREDICTIVE_ANALYTICS
+  PATTERN_RECOGNITION
+  CLASSIFICATION
+  REGRESSION
+  CLUSTERING
+  RECOMMENDATION
+  NLP
+  COMPUTER_VISION
+  TIME_SERIES
+  FRAUD_DETECTION
+  CUSTOM
+}
+
+enum ModelStatus {
+  DRAFT
+  TRAINING
+  ACTIVE
+  INACTIVE
+  DEPRECATED
+  ERROR
+  UPDATING
+}
+
+model ModelTraining {
+  id            String   @id @default(cuid())
+  modelId       String   // Modelo
+  version       String   // Versão do treinamento
+  status        TrainingStatus // Status do treinamento
+  config        Json     // Configuração do treinamento
+  dataset       Json     // Dataset usado
+  metrics       Json     // Métricas de performance
+  artifacts     Json     // Artefatos gerados
+  startTime     DateTime @default(now())
+  endTime       DateTime? // Quando terminou
+  duration      Int?     // Duração em segundos
+  errorMessage  String?  // Mensagem de erro
+  createdBy     String   // Usuário que iniciou
+  createdAt     DateTime @default(now())
+
+  model         AIModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@index([modelId])
+  @@index([status])
+  @@index([startTime])
+}
+
+enum TrainingStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  VALIDATING
+}
+
+model Prediction {
+  id            String   @id @default(cuid())
+  modelId       String   // Modelo usado
+  input         Json     // Dados de entrada
+  output        Json     // Predição gerada
+  confidence    Float    // Confiança da predição
+  status        PredictionStatus // Status da predição
+  metadata      Json     // Metadados
+  processingTime Int     // Tempo de processamento (ms)
+  createdAt     DateTime @default(now())
+
+  model         AIModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@index([modelId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum PredictionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model AnomalyDetection {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  modelId       String   // Modelo usado
+  dataSource    String   // Fonte de dados
+  anomalyType   AnomalyType // Tipo de anomalia
+  severity      AnomalySeverity // Severidade
+  description   String   // Descrição da anomalia
+  data          Json     // Dados da anomalia
+  score         Float    // Score de anomalia (0-1)
+  threshold     Float    // Threshold usado
+  isResolved    Boolean  @default(false)
+  resolvedAt    DateTime? // Quando foi resolvida
+  resolvedBy    String?  // Quem resolveu
+  resolution    String?  // Como foi resolvida
+  createdAt     DateTime @default(now())
+
+  model         AIModel @relation(fields: [modelId], references: [id])
+
+  @@index([companyId])
+  @@index([modelId])
+  @@index([anomalyType])
+  @@index([severity])
+  @@index([isResolved])
+  @@index([createdAt])
+}
+
+enum AnomalyType {
+  TIME_RECORD_ANOMALY
+  LOCATION_ANOMALY
+  DEVICE_ANOMALY
+  BEHAVIOR_ANOMALY
+  PATTERN_ANOMALY
+  SYSTEM_ANOMALY
+  SECURITY_ANOMALY
+  PERFORMANCE_ANOMALY
+  CUSTOM
+}
+
+enum AnomalySeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model MLDataset {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  name          String   // Nome do dataset
+  description   String?  // Descrição
+  type          DatasetType // Tipo de dataset
+  source        String   // Fonte dos dados
+  schema        Json     // Schema dos dados
+  size          Int      // Tamanho do dataset
+  records       Int      // Número de registros
+  quality       Json     // Métricas de qualidade
+  isActive      Boolean  @default(true)
+  lastUpdated   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([type])
+  @@index([isActive])
+}
+
+enum DatasetType {
+  TRAINING
+  VALIDATION
+  TEST
+  PRODUCTION
+  CUSTOM
+}
+
+model MLFeature {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  name          String   // Nome da feature
+  description   String?  // Descrição
+  type          FeatureType // Tipo de feature
+  dataType      String   // Tipo de dados
+  source        String   // Fonte da feature
+  transformation Json    // Transformação aplicada
+  importance    Float?   // Importância da feature
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([type])
+  @@index([isActive])
+}
+
+enum FeatureType {
+  NUMERICAL
+  CATEGORICAL
+  TEMPORAL
+  TEXT
+  BOOLEAN
+  COMPLEX
+  CUSTOM
+}
+
+model MLExperiment {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  name          String   // Nome do experimento
+  description   String?  // Descrição
+  objective     String   // Objetivo do experimento
+  hypothesis    String?  // Hipótese
+  config        Json     // Configuração do experimento
+  status        ExperimentStatus // Status do experimento
+  results       Json?    // Resultados
+  conclusion    String?  // Conclusão
+  startTime     DateTime @default(now())
+  endTime       DateTime? // Quando terminou
+  duration      Int?     // Duração em segundos
+  createdBy     String   // Usuário que criou
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([status])
+  @@index([startTime])
+}
+
+enum ExperimentStatus {
+  PLANNED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  ANALYZING
+}
+
+model AIInsight {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  modelId       String?  // Modelo que gerou
+  type          InsightType // Tipo de insight
+  title         String   // Título do insight
+  description   String   // Descrição
+  data          Json     // Dados do insight
+  confidence    Float    // Confiança (0-1)
+  impact        InsightImpact // Impacto
+  recommendations Json   // Recomendações
+  isRead        Boolean  @default(false)
+  isActioned    Boolean  @default(false)
+  actionedAt    DateTime? // Quando foi acionado
+  actionedBy    String?  // Quem acionou
+  createdAt     DateTime @default(now())
+
+  model         AIModel? @relation(fields: [modelId], references: [id])
+
+  @@index([companyId])
+  @@index([modelId])
+  @@index([type])
+  @@index([impact])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum InsightType {
+  TREND_ANALYSIS
+  PATTERN_DISCOVERY
+  ANOMALY_INSIGHT
+  PREDICTION_INSIGHT
+  OPTIMIZATION
+  RISK_ALERT
+  OPPORTUNITY
+  PERFORMANCE_INSIGHT
+  CUSTOM
+}
+
+enum InsightImpact {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model MLPerformance {
+  id            String   @id @default(cuid())
+  modelId       String   // Modelo
+  metric        String   // Métrica
+  value         Float    // Valor da métrica
+  timestamp     DateTime @default(now())
+  metadata      Json     // Metadados
+
+  model         AIModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@index([modelId])
+  @@index([metric])
+  @@index([timestamp])
+}
+
+model AIConfig {
+  id            String   @id @default(cuid())
+  companyId     String   // Empresa
+  name          String   // Nome da configuração
+  description   String?  // Descrição
+  config        Json     // Configuração
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([isActive])
 }
