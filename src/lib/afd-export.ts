@@ -200,7 +200,7 @@ export async function getAFDStats(companyId?: string): Promise<{
 }
 
 export async function validateAFDFile(
-  filePath: string
+  _filePath: string
 ): Promise<AFDValidationResult> {
   try {
     // TODO: Implementar validação completa do arquivo AFD
@@ -241,7 +241,7 @@ async function generateAFDRecords(
   for (const record of timeRecords) {
     const recordType = getAFDRecordType(record.type);
     const pis = record.employee?.pis || '00000000000';
-    const date = formatAFDDate(record.timestamp, config);
+    // const date = formatAFDDate(record.timestamp, config);
     const time = formatAFDTime(record.timestamp, config);
 
     afdRecords.push({

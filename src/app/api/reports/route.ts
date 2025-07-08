@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { 
   createReportTemplate, 
-  generateReport, 
   findGeneratedReports 
 } from '@/lib/executive-reports';
 

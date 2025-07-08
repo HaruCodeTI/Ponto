@@ -3,8 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { 
   executeDataPurge, 
-  findDataPurges,
-  getRetentionStats
+  findDataPurges
 } from '@/lib/data-retention';
 
 export async function POST(request: NextRequest) {

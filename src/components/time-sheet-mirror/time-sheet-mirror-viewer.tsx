@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RefreshCw, Download, CheckCircle, FileText, Calendar, Clock, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Download, CheckCircle, FileText, Calendar, AlertTriangle } from 'lucide-react';
 
 interface TimeSheetMirror {
   id: string;

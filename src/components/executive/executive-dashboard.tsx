@@ -10,20 +10,20 @@ import {
   TrendingUp, 
   Users, 
   Clock, 
-  AlertTriangle, 
+  // AlertTriangle, 
   Download,
   Plus,
   Settings,
-  RefreshCw,
-  Eye,
-  EyeOff
+  RefreshCw
+  // Eye,
+  // EyeOff
 } from 'lucide-react';
 import { 
   ExecutiveStats, 
   ExecutiveDashboard, 
-  DashboardWidget,
-  BusinessKPI,
-  GeneratedReport
+  DashboardWidget
+  // BusinessKPI,
+  // GeneratedReport
 } from '@/types';
 
 interface ExecutiveDashboardProps {
@@ -32,7 +32,6 @@ interface ExecutiveDashboardProps {
 
 export function ExecutiveDashboardComponent({ companyId }: ExecutiveDashboardProps) {
   const [stats, setStats] = useState<ExecutiveStats | null>(null);
-  const [dashboards, setDashboards] = useState<ExecutiveDashboard[]>([]);
   const [selectedDashboard, setSelectedDashboard] = useState<ExecutiveDashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -53,7 +52,6 @@ export function ExecutiveDashboardComponent({ companyId }: ExecutiveDashboardPro
       // Carregar dashboards
       const dashboardsResponse = await fetch(`/api/dashboards?companyId=${companyId}`);
       const dashboardsData = await dashboardsResponse.json();
-      setDashboards(dashboardsData.data);
 
       if (dashboardsData.data.length > 0) {
         setSelectedDashboard(dashboardsData.data[0]);

@@ -429,4 +429,107 @@ export function createNotificationFromTemplate(
     priority: templateData.priority,
     category: templateData.category
   });
+}
+
+/**
+ * Cria notificação de falha no registro de ponto
+ */
+export function createTimeRecordFailedNotification(
+  employeeId: string,
+  companyId: string,
+  error: string,
+  metadata?: Record<string, any>
+): Promise<Notification> {
+  return createNotification({
+    companyId,
+    employeeId,
+    type: 'ERROR',
+    title: 'Falha no Registro de Ponto',
+    message: `Não foi possível registrar o ponto. Erro: ${error}`,
+    priority: 'HIGH',
+    category: 'ponto',
+    metadata: {
+      actionUrl: '/bater-ponto',
+      actionText: 'Tentar Novamente',
+      icon: 'alert-triangle',
+      ...metadata
+    }
+  });
+}
+
+/**
+ * Cria notificação de sucesso no registro de ponto
+ */
+export function createTimeRecordSuccessNotification(
+  employeeId: string,
+  companyId: string,
+  recordType: string,
+  timestamp: Date,
+  metadata?: Record<string, any>
+): Promise<Notification> {
+  return createNotification({
+    companyId,
+    employeeId,
+    type: 'SUCCESS',
+    title: 'Ponto Registrado com Sucesso',
+    message: `${recordType} registrado às ${timestamp.toLocaleTimeString('pt-BR')}`,
+    priority: 'NORMAL',
+    category: 'ponto',
+    metadata: {
+      actionUrl: '/relatorios',
+      actionText: 'Ver Relatórios',
+      icon: 'check-circle',
+      recordType,
+      timestamp: timestamp.toISOString(),
+      ...metadata
+    }
+  });
+}
+
+/**
+ * Envia notificação
+ */
+export async function sendNotification(
+  notification: Notification,
+  channels: ('email' | 'push' | 'sms' | 'in-app')[] = ['in-app']
+): Promise<void> {
+  // Verificar preferências do usuário
+  const preferences = await getNotificationPreferences(
+    notification.companyId,
+    notification.userId,
+    notification.employeeId
+  );
+
+  // Enviar para cada canal habilitado
+  for (const channel of channels) {
+    switch (channel) {
+      case 'email':
+        if (preferences.emailEnabled) {
+          // TODO: Implementar envio de email
+          console.log('Enviando email:', notification.title);
+        }
+        break;
+      
+      case 'push':
+        if (preferences.pushEnabled) {
+          // TODO: Implementar push notification
+          console.log('Enviando push:', notification.title);
+        }
+        break;
+      
+      case 'sms':
+        if (preferences.smsEnabled) {
+          // TODO: Implementar SMS
+          console.log('Enviando SMS:', notification.title);
+        }
+        break;
+      
+      case 'in-app':
+        if (preferences.inAppEnabled) {
+          // Notificação in-app já foi criada no banco
+          console.log('Notificação in-app criada:', notification.title);
+        }
+        break;
+    }
+  }
 } 

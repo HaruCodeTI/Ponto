@@ -6,22 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+// import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { 
   Database, 
-  Download, 
+  // Download, 
   Upload, 
   Clock, 
   CheckCircle, 
   AlertTriangle, 
   RefreshCw,
-  Settings,
   Calendar,
   HardDrive,
-  Shield,
-  Archive
+  Shield
+  // Archive
 } from 'lucide-react';
 
 interface Backup {
@@ -133,7 +132,7 @@ export function BackupManager() {
   const [backups, setBackups] = useState<Backup[]>([]);
   const [stats, setStats] = useState<BackupStats | null>(null);
   const [schedules, setSchedules] = useState<BackupSchedule[]>([]);
-  const [restoreJobs, setRestoreJobs] = useState<RestoreJob[]>([]);
+  const [restoreJobs] = useState<RestoreJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedBackupType, setSelectedBackupType] = useState<string>('FULL');

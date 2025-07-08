@@ -13,7 +13,7 @@ import { join } from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
-const execAsync = promisify(exec);
+const _execAsync = promisify(exec);
 
 const DEFAULT_BACKUP_CONFIG: BackupConfig = {
   enabled: true,
@@ -577,4 +577,16 @@ function calculateNextRun(
 
 async function getBackupConfig(companyId?: string): Promise<BackupConfig> {
   return DEFAULT_BACKUP_CONFIG;
+}
+
+/**
+ * Obtém o caminho completo do arquivo de backup
+ */
+export function getBackupPath(fileName: string): string {
+  const backupDir = process.env.BACKUP_DIR || './backups';
+  return join(backupDir, fileName);
+}
+
+function exemplo(_days: number, _companyId: string) {
+  // ... existing code ...
 } 

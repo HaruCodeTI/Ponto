@@ -3,8 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { 
   createDataRedundancy, 
-  findDataRedundancies, 
-  getRedundancyStats 
+  findDataRedundancies
 } from '@/lib/secure-storage';
 
 export async function POST(request: NextRequest) {

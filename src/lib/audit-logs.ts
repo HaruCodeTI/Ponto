@@ -161,7 +161,7 @@ export async function createSecurityAuditLog(
     employeeId: string;
     companyId: string;
     action: 'LOGIN_ATTEMPT' | 'LOGIN_SUCCESS' | 'LOGIN_FAILED' | 'LOGOUT' | 'PASSWORD_CHANGE' | 'PERMISSION_CHANGE' | 'DATA_ACCESS' | 'SYSTEM_ACCESS';
-    status: 'SUCCESS' | 'FAILED' | 'BLOCKED' | 'SUSPICIOUS';
+    status: 'SUCCESS' | 'FAILURE' | 'WARNING' | 'PENDING' | 'CANCELLED';
     details: string;
     ipAddress?: string;
     userAgent?: string;
@@ -173,7 +173,7 @@ export async function createSecurityAuditLog(
   const auditLog = await prisma.auditLog.create({
     data: {
       companyId: payload.companyId,
-      userId: payload.userId || session?.user?.id,
+      userId: payload.userId || session?.user?.id || undefined,
       employeeId: payload.employeeId,
       sessionId: generateSessionId(),
       action: payload.action,
@@ -193,14 +193,14 @@ export async function createSecurityAuditLog(
         },
         session: {
           id: generateSessionId(),
-          startTime: session?.user?.sessionStart,
-          duration: session?.user?.sessionDuration
+          startTime: undefined,
+          duration: undefined
         },
         request: {
-          method: 'POST', // TODO: Extrair do contexto
+          method: 'POST',
           url: '/api/audit',
           headers: {},
-          body: payload.metadata
+          body: payload.metadata ? JSON.stringify(payload.metadata) : undefined
         },
         response: {
           statusCode: 200,
@@ -221,7 +221,7 @@ export async function createSecurityAuditLog(
         security: {
           isEncrypted: true,
           hasValidToken: !!session?.user,
-          permissions: session?.user?.permissions || []
+          permissions: []
         },
         ...payload.metadata
       },
@@ -246,7 +246,7 @@ export async function createSystemAuditLog(
     employeeId: string;
     companyId: string;
     action: 'SYSTEM_STARTUP' | 'SYSTEM_SHUTDOWN' | 'BACKUP_START' | 'BACKUP_COMPLETE' | 'MAINTENANCE_START' | 'MAINTENANCE_COMPLETE' | 'ERROR_LOG' | 'PERFORMANCE_ALERT';
-    status: 'SUCCESS' | 'FAILED' | 'WARNING' | 'INFO';
+    status: 'SUCCESS' | 'FAILURE' | 'WARNING' | 'PENDING' | 'CANCELLED';
     details: string;
     metadata?: Record<string, unknown>;
   }
@@ -256,11 +256,11 @@ export async function createSystemAuditLog(
   const auditLog = await prisma.auditLog.create({
     data: {
       companyId: payload.companyId,
-      userId: payload.userId || session?.user?.id,
+      userId: payload.userId || session?.user?.id || undefined,
       employeeId: payload.employeeId,
       sessionId: generateSessionId(),
       action: payload.action,
-      category: 'SYSTEM',
+      category: 'OTHER',
       severity: 'HIGH',
       status: payload.status,
       resourceType: 'SYSTEM',
@@ -276,14 +276,14 @@ export async function createSystemAuditLog(
         },
         session: {
           id: generateSessionId(),
-          startTime: session?.user?.sessionStart,
-          duration: session?.user?.sessionDuration
+          startTime: undefined,
+          duration: undefined
         },
         request: {
-          method: 'POST', // TODO: Extrair do contexto
+          method: 'POST',
           url: '/api/audit',
           headers: {},
-          body: payload.metadata
+          body: payload.metadata ? JSON.stringify(payload.metadata) : undefined
         },
         response: {
           statusCode: 200,
@@ -304,7 +304,7 @@ export async function createSystemAuditLog(
         security: {
           isEncrypted: true,
           hasValidToken: !!session?.user,
-          permissions: session?.user?.permissions || []
+          permissions: []
         },
         ...payload.metadata
       },
@@ -978,4 +978,144 @@ async function findComplianceIssues(companyId?: string): Promise<Array<{
   }
 
   return issues;
+}
+
+/**
+ * Busca logs de auditoria com filtros
+ */
+export async function findAuditLogs(
+  filters: {
+    companyId?: string;
+    userId?: string;
+    employeeId?: string;
+    action?: string;
+    category?: string;
+    severity?: string;
+    status?: string;
+    startDate?: Date;
+    endDate?: Date;
+  },
+  page = 1,
+  limit = 50
+): Promise<{ data: AuditLog[]; total: number; page: number; totalPages: number }> {
+  const whereClause: any = {};
+  
+  if (filters.companyId) whereClause.companyId = filters.companyId;
+  if (filters.userId) whereClause.userId = filters.userId;
+  if (filters.employeeId) whereClause.employeeId = filters.employeeId;
+  if (filters.action) whereClause.action = filters.action;
+  if (filters.category) whereClause.category = filters.category;
+  if (filters.severity) whereClause.severity = filters.severity;
+  if (filters.status) whereClause.status = filters.status;
+  
+  if (filters.startDate || filters.endDate) {
+    whereClause.timestamp = {};
+    if (filters.startDate) whereClause.timestamp.gte = filters.startDate;
+    if (filters.endDate) whereClause.timestamp.lte = filters.endDate;
+  }
+
+  const [data, total] = await Promise.all([
+    prisma.auditLog.findMany({
+      where: whereClause,
+      orderBy: { timestamp: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit
+    }),
+    prisma.auditLog.count({ where: whereClause })
+  ]);
+
+  return {
+    data,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit)
+  };
+}
+
+/**
+ * Cria log de auditoria genérico
+ */
+export async function createAuditLog(
+  payload: {
+    userId: string;
+    employeeId: string;
+    companyId: string;
+    action: string;
+    category: 'AUTHENTICATION' | 'AUTHORIZATION' | 'DATA_ACCESS' | 'DATA_MODIFICATION' | 'SYSTEM_CONFIG' | 'SECURITY' | 'COMPLIANCE' | 'BACKUP_RESTORE' | 'REPORT_GENERATION' | 'USER_MANAGEMENT' | 'EMPLOYEE_MANAGEMENT' | 'TIME_RECORD' | 'PAYROLL' | 'NOTIFICATION' | 'API_ACCESS' | 'FILE_OPERATION' | 'DATABASE_OPERATION' | 'NETWORK_ACCESS' | 'PRIVACY' | 'OTHER';
+    severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    status: 'SUCCESS' | 'FAILURE' | 'WARNING' | 'PENDING' | 'CANCELLED';
+    resourceType: string;
+    resourceId: string;
+    details: string;
+    oldValues?: Record<string, unknown>;
+    newValues?: Record<string, unknown>;
+    ipAddress?: string;
+    userAgent?: string;
+    metadata?: Record<string, unknown>;
+  }
+): Promise<AuditLog> {
+  const session = await getServerSession(authOptions);
+  
+  const auditLog = await prisma.auditLog.create({
+    data: {
+      companyId: payload.companyId,
+      userId: payload.userId || session?.user?.id || undefined,
+      employeeId: payload.employeeId,
+      sessionId: generateSessionId(),
+      action: payload.action,
+      category: payload.category,
+      severity: payload.severity,
+      status: payload.status,
+      resourceType: payload.resourceType,
+      resourceId: payload.resourceId,
+      oldValues: payload.oldValues || {},
+      newValues: payload.newValues || {},
+      metadata: {
+        user: {
+          id: session?.user?.id,
+          email: session?.user?.email,
+          name: session?.user?.name,
+          role: session?.user?.role
+        },
+        session: {
+          id: generateSessionId(),
+          startTime: undefined,
+          duration: undefined
+        },
+        request: {
+          method: 'POST',
+          url: '/api/audit',
+          headers: {},
+          body: payload.metadata ? JSON.stringify(payload.metadata) : undefined
+        },
+        response: {
+          statusCode: 200,
+          duration: 0,
+          size: 0
+        },
+        context: {
+          browser: payload.userAgent || 'Unknown',
+          os: 'Unknown',
+          device: 'Unknown',
+          screen: 'Unknown'
+        },
+        performance: {
+          memoryUsage: 0,
+          cpuUsage: 0,
+          networkLatency: 0
+        },
+        security: {
+          isEncrypted: true,
+          hasValidToken: !!session?.user,
+          permissions: []
+        },
+        ...payload.metadata
+      },
+      ipAddress: payload.ipAddress || await getClientIP(),
+      userAgent: payload.userAgent || 'Unknown',
+      location: 'Unknown'
+    }
+  });
+
+  return auditLog;
 } 

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { 
   Shield, 
@@ -20,14 +20,12 @@ import {
   Settings,
   Download,
   RefreshCw,
-  TrendingUp,
-  TrendingDown,
-  Activity,
-  BarChart3,
-  PieChart,
-  Calendar,
-  Filter,
-  Search
+  Activity
+  // BarChart3,
+  // PieChart,
+  // Calendar,
+  // Filter,
+  // Search
 } from 'lucide-react';
 
 interface AuditLog {
@@ -100,8 +98,6 @@ export function AuditDashboard() {
   const [alerts, setAlerts] = useState<SecurityAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
 
   useEffect(() => {
     loadData();

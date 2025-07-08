@@ -7,7 +7,6 @@ import { LocationHistory } from "@/components/reports/location-history";
 import { WorkScheduleAnalysis } from "@/components/reports/work-schedule-analysis";
 import { ReportScheduler } from "@/components/reports/report-scheduler";
 import { ProductivityReport } from "@/components/reports/productivity-report";
-import { MirrorReport } from "@/components/reports/mirror-report";
 import { AFDReport } from "@/components/reports/afd-report";
 import { EmailScheduler } from "@/components/reports/email-scheduler";
 import { FormatConfig } from "@/components/reports/format-config";
