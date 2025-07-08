@@ -754,35 +754,6 @@ export interface BackupStats {
   byStatus: Record<string, number>;
 }
 
-export interface BackupConfig {
-  enabled: boolean;
-  storage: {
-    type: 'local' | 's3' | 'gcs' | 'azure';
-    path: string;
-    credentials?: Record<string, string>;
-  };
-  compression: {
-    enabled: boolean;
-    algorithm: 'gzip' | 'bzip2' | 'lz4';
-    level: number;
-  };
-  encryption: {
-    enabled: boolean;
-    algorithm: 'aes-256-gcm' | 'aes-256-cbc';
-    key?: string;
-  };
-  retention: {
-    defaultDays: number;
-    maxBackups: number;
-    cleanupEnabled: boolean;
-  };
-  scheduling: {
-    enabled: boolean;
-    timezone: string;
-    maxConcurrentJobs: number;
-  };
-}
-
 export interface BackupValidationResult {
   isValid: boolean;
   checksum: string;

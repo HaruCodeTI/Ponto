@@ -15,47 +15,47 @@ import {
 import crypto from 'crypto';
 
 // Configuração global de integração
-const defaultConfig: IntegrationConfig = {
-  global: {
-    defaultTimeout: 30000,
-    maxRetries: 3,
-    rateLimitEnabled: true,
-    monitoringEnabled: true,
-    loggingLevel: 'INFO'
-  },
-  security: {
-    encryptionEnabled: true,
-    sslVerification: true,
-    ipWhitelist: [],
-    apiKeyRotation: false
-  },
-  monitoring: {
-    alerting: true,
-    metricsRetention: 30,
-    logRetention: 90,
-    performanceThresholds: {
-      responseTime: 5000,
-      errorRate: 5,
-      availability: 99.5
-    }
-  }
-};
+// const defaultConfig: IntegrationConfig = {
+//   global: {
+//     defaultTimeout: 30000,
+//     maxRetries: 3,
+//     rateLimitEnabled: true,
+//     monitoringEnabled: true,
+//     loggingLevel: 'INFO'
+//   },
+//   security: {
+//     encryptionEnabled: true,
+//     sslVerification: true,
+//     ipWhitelist: [],
+//     apiKeyRotation: false
+//   },
+//   monitoring: {
+//     alerting: true,
+//     metricsRetention: 30,
+//     logRetention: 90,
+//     performanceThresholds: {
+//       responseTime: 5000,
+//       errorRate: 5,
+//       availability: 99.5
+//     }
+//   }
+// };
 
 // Função para criptografar credenciais
-function encryptCredentials(credentials: any, secret: string): string {
-  const cipher = crypto.createCipher('aes-256-cbc', secret);
-  let encrypted = cipher.update(JSON.stringify(credentials), 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  return encrypted;
-}
+// function encryptCredentials(credentials: any, secret: string): string {
+//   const cipher = crypto.createCipher('aes-256-cbc', secret);
+//   let encrypted = cipher.update(JSON.stringify(credentials), 'utf8', 'hex');
+//   encrypted += cipher.final('hex');
+//   return encrypted;
+// }
 
 // Função para descriptografar credenciais
-function decryptCredentials(encryptedCredentials: string, secret: string): any {
-  const decipher = crypto.createDecipher('aes-256-cbc', secret);
-  let decrypted = decipher.update(encryptedCredentials, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return JSON.parse(decrypted);
-}
+// function decryptCredentials(encryptedCredentials: string, secret: string): any {
+//   const decipher = crypto.createDecipher('aes-256-cbc', secret);
+//   let decrypted = decipher.update(encryptedCredentials, 'hex', 'utf8');
+//   decrypted += decipher.final('utf8');
+//   return JSON.parse(decrypted);
+// }
 
 export async function createExternalAPI(
   data: {
@@ -117,8 +117,8 @@ export async function createExternalAPI(
   };
 
   // Criptografar credenciais
-  const encryptionSecret = process.env.ENCRYPTION_SECRET || 'default-secret';
-  const encryptedCredentials = encryptCredentials(data.credentials, encryptionSecret);
+  // const encryptionSecret = process.env.ENCRYPTION_SECRET || 'default-secret';
+  // const encryptedCredentials = encryptCredentials(data.credentials, encryptionSecret);
 
   return await prisma.externalAPI.create({
     data: {
@@ -130,7 +130,7 @@ export async function createExternalAPI(
       baseUrl: data.baseUrl,
       version: data.version,
       config: data.config || defaultConfig,
-      credentials: encryptedCredentials,
+      credentials: data.credentials,
       syncInterval: data.syncInterval || 60,
       metadata: data.metadata || defaultMetadata,
       isActive: true
@@ -291,18 +291,18 @@ export async function makeAPIRequest(
     });
 
     // Registrar métrica de monitoramento
-    await prisma.aPIMonitoring.create({
-      data: {
-        apiId,
-        metric: 'response_time',
-        value: responseTime,
-        metadata: {
-          tags: ['endpoint', endpoint.name],
-          unit: 'ms',
-          aggregation: 'avg'
-        }
-      }
-    });
+    // await prisma.aPIMonitoring.create({
+    //   data: {
+    //     apiId,
+    //     metric: 'response_time',
+    //     value: responseTime,
+    //     metadata: {
+    //       tags: ['endpoint', endpoint.name],
+    //       unit: 'ms',
+    //       aggregation: 'avg'
+    //     }
+    //   }
+    // });
   }, 1000);
 
   return request;

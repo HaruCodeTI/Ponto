@@ -247,7 +247,7 @@ export async function findDataPurges(
   };
 }
 
-export async function getRetentionStats(companyId?: string): Promise<{
+export async function getRetentionStats(_companyId?: string): Promise<{
   totalPolicies: number;
   activePolicies: number;
   totalPurges: number;

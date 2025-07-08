@@ -126,6 +126,6 @@ export async function findRestoreOperations(
   };
 }
 
-export async function getRestoreConfig(companyId?: string): Promise<RestoreConfig> {
+export async function getRestoreConfig(_companyId?: string): Promise<RestoreConfig> {
   return DEFAULT_RESTORE_CONFIG;
 } 

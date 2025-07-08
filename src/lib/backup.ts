@@ -10,10 +10,8 @@ import {
 } from '@/types';
 import { writeFile, mkdir, readFile, unlink } from 'fs/promises';
 import { join } from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const _execAsync = promisify(exec);
+// import { exec } from 'child_process';
+// import { promisify } from 'util';
 
 const DEFAULT_BACKUP_CONFIG: BackupConfig = {
   enabled: true,
@@ -551,17 +549,13 @@ SELECT 'Backup simulation' as status;`;
   };
 }
 
-function generateBackupFileName(company: any, type: string): string {
+function generateBackupFileName(_company: any, type: string): string {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
   const companyCode = company.cnpj?.replace(/\D/g, '').substring(0, 8) || 'company';
   return `backup_${companyCode}_${type.toLowerCase()}_${timestamp}.sql`;
 }
 
-function calculateNextRun(
-  frequency: string,
-  time: string,
-  days: number[]
-): Date {
+function calculateNextRun(frequency: string, time: string, _days: number[]): Date {
   const now = new Date();
   const [hours, minutes] = time.split(':').map(Number);
   
@@ -585,8 +579,4 @@ async function getBackupConfig(companyId?: string): Promise<BackupConfig> {
 export function getBackupPath(fileName: string): string {
   const backupDir = process.env.BACKUP_DIR || './backups';
   return join(backupDir, fileName);
-}
-
-function exemplo(_days: number, _companyId: string) {
-  // ... existing code ...
 } 

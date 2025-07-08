@@ -435,7 +435,7 @@ export function createNotificationFromTemplate(
  * Cria notificação de falha no registro de ponto
  */
 export function createTimeRecordFailedNotification(
-  employeeId: string,
+  _employeeId: string,
   companyId: string,
   error: string,
   metadata?: Record<string, any>

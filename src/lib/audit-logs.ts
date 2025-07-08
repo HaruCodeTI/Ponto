@@ -5,10 +5,10 @@ import {
   DataRetentionPolicy, 
   PrivacyConsent, 
   AuditReport, 
-  AuditStats,
-  AuditFilter,
-  AuditExportOptions,
-  ComplianceCheck
+  AuditStats
+  // AuditFilter,
+  // AuditExportOptions,
+  // ComplianceCheck
 } from '@/types';
 import { getServerSession } from 'next-auth';
 import { authOptions } from './auth';
@@ -315,28 +315,6 @@ export async function createSystemAuditLog(
   });
 
   return auditLog;
-}
-
-/**
- * Simula salvamento de log (em produção seria no banco)
- */
-async function simulateSaveAuditLog(log: AuditLog): Promise<void> {
-  // Simula delay de salvamento
-  await new Promise(resolve => setTimeout(resolve, 10 + Math.random() * 20));
-  
-  // Em produção, salvaria no banco de dados
-  // await prisma.auditLog.create({ data: log });
-  
-  // Por enquanto, apenas log no console
-  console.log('Log de auditoria salvo:', {
-    id: log.id,
-    action: log.action,
-    status: log.status,
-    userId: log.userId,
-    timestamp: log.timestamp,
-    securityEvent: log.metadata?.securityEvent,
-    systemEvent: log.metadata?.systemEvent,
-  });
 }
 
 /**

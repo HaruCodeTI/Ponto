@@ -340,14 +340,14 @@ function getAFDRecordType(timeRecordType: string): '1' | '2' | '3' | '4' | '5' |
   return typeMap[timeRecordType] || '2';
 }
 
-function formatAFDDate(date: Date, config: AFDConfig): string {
+function formatAFDDate(date: Date, _config: AFDConfig): string {
   const day = date.getDate().toString().padStart(2, '0');
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const year = date.getFullYear().toString();
   return day + month + year;
 }
 
-function formatAFDTime(date: Date, config: AFDConfig): string {
+function formatAFDTime(date: Date, _config: AFDConfig): string {
   const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
   return hours + minutes;
@@ -439,6 +439,6 @@ function generateAFDMetadata(
   };
 }
 
-async function getAFDConfig(companyId?: string): Promise<AFDConfig> {
+async function getAFDConfig(_companyId?: string): Promise<AFDConfig> {
   return DEFAULT_AFD_CONFIG;
 } 

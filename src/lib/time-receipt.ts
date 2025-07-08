@@ -13,19 +13,19 @@ const DEFAULT_RECEIPT_CONFIG: ReceiptConfig = {
 };
 
 export async function generateTimeReceipt(
-  timeRecordId: string,
-  employeeId: string,
-  companyId: string,
+  _timeRecordId: string,
+  _employeeId: string,
+  _companyId: string,
   receiptType: 'CLOCK_IN' | 'CLOCK_OUT' | 'BREAK_START' | 'BREAK_END' | 'ADJUSTMENT' | 'VERIFICATION'
 ): Promise<TimeRecordReceipt> {
-  const config = await getReceiptConfig(companyId);
+  const config = await getReceiptConfig();
   if (!config.enabled) {
     throw new Error('Geração de comprovantes desabilitada');
   }
 
   // Buscar dados do registro de ponto
   const timeRecord = await prisma.timeRecord.findUnique({
-    where: { id: timeRecordId },
+    where: { id: _timeRecordId },
     include: {
       employee: true,
       company: true
@@ -38,7 +38,7 @@ export async function generateTimeReceipt(
 
   // Buscar dados do funcionário
   const employee = await prisma.employee.findUnique({
-    where: { id: employeeId }
+    where: { id: _employeeId }
   });
 
   if (!employee) {
@@ -47,7 +47,7 @@ export async function generateTimeReceipt(
 
   // Buscar dados da empresa
   const company = await prisma.company.findUnique({
-    where: { id: companyId }
+    where: { id: _companyId }
   });
 
   if (!company) {
@@ -101,9 +101,9 @@ export async function generateTimeReceipt(
   // Criar comprovante no banco
   const receipt = await prisma.timeRecordReceipt.create({
     data: {
-      timeRecordId,
-      employeeId,
-      companyId,
+      timeRecordId: _timeRecordId,
+      employeeId: _employeeId,
+      companyId: _companyId,
       receiptType,
       receiptData,
       hash,

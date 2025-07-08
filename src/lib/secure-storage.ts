@@ -11,7 +11,7 @@ import {
   StorageHealthConfig,
   ReplicaStatus,
   IntegrityIssue,
-  IntegrityFix
+  // Comentado IntegrityFix
 } from '@/types';
 
 /**

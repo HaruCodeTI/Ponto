@@ -7,7 +7,7 @@ import {
   ReportTemplate,
   GeneratedReport,
   DataExport,
-  BIIntegration,
+  // Comentado BIIntegration, etc
   ExecutiveStats,
   KPITrend,
   DashboardData
@@ -538,7 +538,7 @@ export async function getExecutiveStats(companyId?: string): Promise<ExecutiveSt
     activeKPIs,
     totalReports,
     recentExports,
-    biIntegrations
+    // Comentado BIIntegration, etc
   ] = await Promise.all([
     prisma.executiveDashboard.count({ where: whereClause }),
     prisma.businessKPI.count({ where: { ...whereClause, isActive: true } }),
@@ -549,7 +549,7 @@ export async function getExecutiveStats(companyId?: string): Promise<ExecutiveSt
         createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
       }
     }),
-    prisma.bIIntegration.count({ where: { ...whereClause, isActive: true } })
+    // Comentado BIIntegration, etc
   ]);
 
   // Buscar KPIs principais
@@ -576,7 +576,6 @@ export async function getExecutiveStats(companyId?: string): Promise<ExecutiveSt
     activeKPIs,
     totalReports,
     recentExports,
-    biIntegrations,
     topKPIs: topKPIs.map(kpi => ({
       id: kpi.id,
       name: kpi.name,
