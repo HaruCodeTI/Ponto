@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { sendVerificationEmail } from '@/lib/resend';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +22,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Cria usuário (role inicial EMPLOYEE) - email não verificado
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         name,
         email,
@@ -30,11 +32,38 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Gera token de verificação
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
+
+    // Remove tokens antigos
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: email }
+    });
+
+    // Cria novo token
+    await prisma.verificationToken.create({
+      data: {
+        identifier: email,
+        token,
+        expires,
+      },
+    });
+
+    // Envia email de verificação usando Resend
+    const emailResult = await sendVerificationEmail(email, token);
+    
+    if (!emailResult.success) {
+      console.error('Erro ao enviar email de verificação:', emailResult.error);
+      // Não falha o registro se o email falhar, apenas loga o erro
+    }
+
     return NextResponse.json({ 
       success: true, 
       message: 'Conta criada com sucesso! Verifique seu email para ativar sua conta.' 
     });
-  } catch {
+  } catch (error) {
+    console.error('Erro ao registrar usuário:', error);
     return NextResponse.json({ error: 'Erro ao registrar usuário.' }, { status: 500 });
   }
 } 

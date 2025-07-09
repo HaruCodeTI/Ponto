@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
+import { sendVerificationEmail } from '@/lib/resend';
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,9 +40,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Simula envio de email (em produção, usar serviço de email real)
-    console.log(`📧 Email de verificação enviado para: ${email}`);
-    console.log(`🔗 Link de verificação: ${process.env.NEXTAUTH_URL}/auth/verify?token=${token}`);
+    // Envia email de verificação usando Resend
+    const emailResult = await sendVerificationEmail(email, token);
+    
+    if (!emailResult.success) {
+      console.error('Erro ao enviar email de verificação:', emailResult.error);
+      return NextResponse.json({ error: 'Erro ao enviar email de verificação.' }, { status: 500 });
+    }
 
     return NextResponse.json({ 
       success: true, 

@@ -29,6 +29,15 @@ NEXTAUTH_SECRET="your-secret-key-here"
 # Redis
 REDIS_URL="redis://redis:6379"
 
+# Resend (Email Service) - RECOMENDADO
+RESEND_API_KEY="re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Email (Alternativa ao Resend)
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_USER="your-email@gmail.com"
+SMTP_PASS="your-app-password"
+
 # Stripe (opcional)
 STRIPE_SECRET_KEY="sk_test_..."
 STRIPE_PUBLISHABLE_KEY="pk_test_..."
@@ -36,12 +45,6 @@ STRIPE_WEBHOOK_SECRET="whsec_..."
 
 # Google Maps (opcional)
 GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
-
-# Email (opcional)
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT="587"
-SMTP_USER="your-email@gmail.com"
-SMTP_PASS="your-app-password"
 
 # Security
 JWT_SECRET="your-jwt-secret-here"
@@ -52,7 +55,17 @@ NODE_ENV="production"
 NEXT_TELEMETRY_DISABLED="1"
 ```
 
-### 2. Executar em Produção
+### 2. Configuração do Resend (Email)
+
+1. Acesse [resend.com](https://resend.com) e crie uma conta
+2. Obtenha sua API key no dashboard
+3. Configure um domínio verificado (ou use o domínio de teste)
+4. Adicione a API key no arquivo `.env`:
+   ```bash
+   RESEND_API_KEY="re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ```
+
+### 3. Executar em Produção
 
 ```bash
 # Build e iniciar todos os serviços
@@ -65,7 +78,7 @@ docker-compose logs -f app
 docker-compose down
 ```
 
-### 3. Executar em Desenvolvimento
+### 4. Executar em Desenvolvimento
 
 ```bash
 # Iniciar apenas banco e Redis
@@ -175,6 +188,15 @@ docker system prune -a
 
 # Rebuild sem cache
 docker-compose build --no-cache
+```
+
+### Problema: Emails não são enviados
+```bash
+# Verificar se RESEND_API_KEY está configurada
+echo $RESEND_API_KEY
+
+# Verificar logs da aplicação
+docker-compose logs app | grep -i email
 ```
 
 ## Deploy em Produção
