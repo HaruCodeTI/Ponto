@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { randomBytes } from 'crypto';
+import { sendPasswordResetEmail } from '@/lib/resend';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,10 +24,18 @@ export async function POST(request: NextRequest) {
         expiresAt,
       },
     });
-    // Simula envio de email (log)
-    console.log(`Link de redefinição: http://localhost:3000/auth/reset-password?token=${token}`);
+    
+    // Envia email de redefinição de senha usando Resend
+    const emailResult = await sendPasswordResetEmail(email, token);
+    
+    if (!emailResult.success) {
+      console.error('Erro ao enviar email de redefinição:', emailResult.error);
+      return NextResponse.json({ error: 'Erro ao enviar email de redefinição.' }, { status: 500 });
+    }
+
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (error) {
+    console.error('Erro ao solicitar recuperação:', error);
     return NextResponse.json({ error: 'Erro ao solicitar recuperação.' }, { status: 500 });
   }
 } 
