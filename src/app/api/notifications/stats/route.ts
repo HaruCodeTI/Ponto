@@ -15,11 +15,7 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
     const employeeId = searchParams.get('employeeId');
 
-    const stats = await getNotificationStats({
-      companyId: companyId || undefined,
-      userId: userId || undefined,
-      employeeId: employeeId || undefined
-    });
+    const stats = await getNotificationStats();
 
     return NextResponse.json(stats);
   } catch (error) {

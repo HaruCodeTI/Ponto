@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
 
-    const stats = await getAuditStats(companyId || undefined);
+    const stats = await getAuditStats(companyId || session.user.companyId || '');
 
     return NextResponse.json(stats);
   } catch (error) {

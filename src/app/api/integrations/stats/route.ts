@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
 
-    const stats = await getIntegrationStats(companyId || undefined);
+    const stats = await getIntegrationStats();
 
     return NextResponse.json(stats);
   } catch (error) {

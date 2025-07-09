@@ -1,174 +1,127 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from "@/lib/prisma";
-import { CreateTimeRecordData, TimeRecordResponse, TimeRecord } from "@/types/time-record";
-import { detectDuplicate, getDefaultDuplicateDetectionConfig } from "@/lib/duplicate-detection";
-import { 
-  createTimeRecordSuccessNotification, 
-  createTimeRecordFailedNotification,
-  sendNotification 
-} from "@/lib/notifications";
-import { 
-  generateSimpleHash
-} from "@/lib/hash-verification";
-// import { 
-//   generateRecordHash, 
-//   generateIntegrityHash, 
-//   generateIntegrityTimestamp,
-//   validateRecordData,
-//   type ImmutableRecordData 
-// } from "@/lib/immutable-records";
+import { TimeRecord } from '@prisma/client';
 
-export async function POST(req: NextRequest): Promise<NextResponse<TimeRecordResponse>> {
+export async function POST(request: NextRequest) {
   try {
-    const data = (await req.json()) as CreateTimeRecordData;
-
-    // Validação básica
-    if (!data.type || !data.userId || !data.employeeId || !data.companyId) {
-      return NextResponse.json({ success: false, error: "Dados obrigatórios faltando" }, { status: 400 });
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const timestamp = new Date();
-    
-    // Geração do hash básico (será expandido para imutabilidade)
-    const hash = generateSimpleHash((data as unknown) as Record<string, unknown>, timestamp);
+    const body = await request.json();
+    const { 
+      employeeId, 
+      type, 
+      latitude, 
+      longitude, 
+      ipAddress, 
+      deviceInfo,
+      hash 
+    } = body;
 
-    // Busca registros do mesmo funcionário no dia
-    const startOfDay = new Date(timestamp);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(timestamp);
-    endOfDay.setHours(23, 59, 59, 999);
+    if (!employeeId || !type || !hash) {
+      return NextResponse.json(
+        { error: 'Dados obrigatórios não fornecidos' },
+        { status: 400 }
+      );
+    }
 
-    const existingRecordsRaw = await prisma.timeRecord.findMany({
+    // Verificar se o funcionário existe e pertence à empresa
+    const employee = await prisma.employee.findFirst({
       where: {
-        employeeId: data.employeeId,
-        timestamp: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-      },
-      orderBy: { timestamp: "desc" },
-    });
-    // Ajusta tipos para TimeRecord (timestamp e createdAt como string)
-    const existingRecords: TimeRecord[] = existingRecordsRaw.map((rec) => ({
-      ...rec,
-      timestamp: rec.timestamp instanceof Date ? rec.timestamp.toISOString() : rec.timestamp,
-      createdAt: rec.createdAt instanceof Date ? rec.createdAt.toISOString() : rec.createdAt,
-      latitude: rec.latitude ?? undefined,
-      longitude: rec.longitude ?? undefined,
-      ipAddress: rec.ipAddress ?? undefined,
-      deviceInfo: rec.deviceInfo ?? undefined,
-      photoUrl: rec.photoUrl ?? undefined,
-      nfcTag: rec.nfcTag ?? undefined,
-      integrityHash: "temp", // Temporário até migração
-      integrityTimestamp: new Date().toISOString(), // Temporário até migração
-    }));
-
-    // Monta registro simulado para detecção
-    const newRecord: TimeRecord = {
-      id: "new",
-      type: data.type,
-      timestamp: timestamp.toISOString(),
-      latitude: data.latitude,
-      longitude: data.longitude,
-      ipAddress: data.ipAddress,
-      deviceInfo: data.deviceInfo,
-      photoUrl: data.photoUrl,
-      nfcTag: data.nfcTag,
-      hash,
-      integrityHash: "temp", // Temporário até migração
-      integrityTimestamp: new Date().toISOString(), // Temporário até migração
-      createdAt: timestamp.toISOString(),
-      userId: data.userId,
-      employeeId: data.employeeId,
-      companyId: data.companyId,
-    };
-
-    // Detecção de duplicidade
-    const duplicateResult = detectDuplicate(
-      newRecord,
-      existingRecords,
-      getDefaultDuplicateDetectionConfig(),
-      'HYBRID'
-    );
-
-    if (duplicateResult.isDuplicate) {
-      // Enviar notificação de falha
-      try {
-        const notification = createTimeRecordFailedNotification(
-          data.userId,
-          data.employeeId,
-          data.companyId,
-          `Registro de ponto duplicado (${duplicateResult.duplicateType})`,
-          data
-        );
-        await sendNotification(notification);
-      } catch (error) {
-        console.error("Erro ao enviar notificação:", error);
+        id: employeeId,
+        companyId: session.user.companyId
       }
+    });
 
-      return NextResponse.json({
-        success: false,
-        error: `Registro de ponto duplicado (${duplicateResult.duplicateType}). ${duplicateResult.warnings.join(' ')}`,
-        validation: {
-          location: { isValid: true },
-          device: { isValid: true },
-          time: { isValid: false, isWithinWorkHours: true, isWithinTolerance: true },
-          isDuplicate: true,
-          isValid: false,
-          errors: duplicateResult.errors.length > 0 ? duplicateResult.errors : [
-            `Duplicidade detectada: ${duplicateResult.duplicateType}`
-          ],
-        },
-      }, { status: 409 });
+    if (!employee) {
+      return NextResponse.json(
+        { error: 'Funcionário não encontrado' },
+        { status: 404 }
+      );
     }
 
-    // Criação do registro de ponto
     const timeRecord = await prisma.timeRecord.create({
       data: {
-        type: data.type,
-        timestamp,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        ipAddress: data.ipAddress,
-        deviceInfo: data.deviceInfo,
-        photoUrl: data.photoUrl,
-        nfcTag: data.nfcTag,
+        employeeId,
+        type: type as any,
+        timestamp: new Date(),
+        latitude: latitude || null,
+        longitude: longitude || null,
+        ipAddress: ipAddress || null,
+        deviceInfo: deviceInfo || null,
         hash,
-        userId: data.userId,
-        employeeId: data.employeeId,
-        companyId: data.companyId,
-      },
+        userId: session.user.id,
+        companyId: session.user.companyId!,
+        integrityHash: hash, // Hash de integridade básico
+        integrityTimestamp: new Date()
+      }
     });
 
-    // Converter campos Date para string ISO para compatibilidade com TimeRecordResponse
-    const formattedTimeRecord = {
-      ...timeRecord,
-      timestamp: timeRecord.timestamp.toISOString(),
-      createdAt: timeRecord.createdAt.toISOString(),
-      latitude: timeRecord.latitude ?? undefined,
-      longitude: timeRecord.longitude ?? undefined,
-      ipAddress: timeRecord.ipAddress ?? undefined,
-      deviceInfo: timeRecord.deviceInfo ?? undefined,
-      photoUrl: timeRecord.photoUrl ?? undefined,
-      nfcTag: timeRecord.nfcTag ?? undefined,
-      integrityHash: "temp", // Temporário até migração
-      integrityTimestamp: new Date().toISOString(), // Temporário até migração
-    };
+    return NextResponse.json(timeRecord, { status: 201 });
+  } catch (error) {
+    console.error('Erro ao registrar ponto:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
 
-    // Enviar notificação de sucesso
-    try {
-      const notification = createTimeRecordSuccessNotification(
-        formattedTimeRecord,
-        "Funcionário", // Em produção, seria buscado do banco
-        "Empresa" // Em produção, seria buscado do banco
-      );
-      await sendNotification(notification);
-    } catch (error) {
-      console.error("Erro ao enviar notificação:", error);
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    return NextResponse.json({ success: true, data: formattedTimeRecord }, { status: 201 });
-  } catch {
-    return NextResponse.json({ success: false, error: "Erro ao registrar ponto" }, { status: 500 });
+    const { searchParams } = new URL(request.url);
+    const employeeId = searchParams.get('employeeId');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const type = searchParams.get('type');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+
+    const where: any = { companyId: session.user.companyId };
+    
+    if (employeeId) where.employeeId = employeeId;
+    if (type) where.type = type;
+    if (startDate || endDate) {
+      where.timestamp = {};
+      if (startDate) where.timestamp.gte = new Date(startDate);
+      if (endDate) where.timestamp.lte = new Date(endDate);
+    }
+
+    const [records, total] = await Promise.all([
+      prisma.timeRecord.findMany({
+        where,
+        include: {
+          employee: {
+            select: { id: true, registration: true }
+          }
+        },
+        orderBy: { timestamp: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit
+      }),
+      prisma.timeRecord.count({ where })
+    ]);
+
+    return NextResponse.json({
+      records,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    console.error('Erro ao buscar registros de ponto:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
   }
 } 

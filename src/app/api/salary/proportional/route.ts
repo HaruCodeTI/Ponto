@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
         ...record,
         timestamp: record.timestamp.toISOString(),
         createdAt: record.createdAt.toISOString(),
+        integrityTimestamp: record.integrityTimestamp.toISOString(),
         latitude: record.latitude ?? undefined,
         longitude: record.longitude ?? undefined,
         ipAddress: record.ipAddress ?? undefined,

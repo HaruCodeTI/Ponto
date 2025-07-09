@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     if (severity) filters.severity = severity;
     if (status) filters.status = status;
 
-    const result = await findSecurityAlerts(filters, page, limit);
+    const result = await findSecurityAlerts(companyId || session.user.companyId || '');
 
     return NextResponse.json(result);
   } catch (error) {

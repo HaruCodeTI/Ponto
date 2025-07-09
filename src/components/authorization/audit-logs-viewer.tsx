@@ -17,8 +17,8 @@ import { AuditLog } from '@/types/authorization';
 
 interface AuditLogsViewerProps {
   logs: AuditLog[];
-  onFilterChange: (filters: any) => void;
-  onExport: () => void;
+  onFilterChange?: (filters: any) => void;
+  onExport?: () => void;
   isLoading?: boolean;
 }
 
@@ -60,7 +60,7 @@ export function AuditLogsViewer({ logs, onFilterChange, onExport, isLoading }: A
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   useEffect(() => {
-    onFilterChange(filters);
+    onFilterChange?.(filters);
   }, [filters, onFilterChange]);
 
   const handleFilterChange = (key: string, value: any) => {
@@ -194,7 +194,7 @@ export function AuditLogsViewer({ logs, onFilterChange, onExport, isLoading }: A
             <Button variant="outline" onClick={clearFilters}>
               Limpar Filtros
             </Button>
-            <Button onClick={onExport} disabled={isLoading}>
+            <Button onClick={() => onExport?.()} disabled={isLoading}>
               <Download className="mr-2 h-4 w-4" />
               Exportar
             </Button>

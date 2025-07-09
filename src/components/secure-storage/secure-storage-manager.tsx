@@ -78,6 +78,7 @@ interface StorageHealth {
   totalSpace?: number;
   usedSpace?: number;
   freeSpace?: number;
+  lastError?: string;
 }
 
 export function SecureStorageManager() {

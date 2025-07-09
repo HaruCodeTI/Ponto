@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { Loader2, Smartphone, ArrowLeft } from "lucide-react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 
-export default function TwoFactorVerifyPage() {
+function TwoFactorVerifyInner() {
   const [token, setToken] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -134,5 +134,13 @@ export default function TwoFactorVerifyPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function TwoFactorVerifyPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+      <TwoFactorVerifyInner />
+    </Suspense>
   );
 } 

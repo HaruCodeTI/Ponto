@@ -6,7 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Notification, NotificationType } from "@/lib/notifications";
+import type { Notification } from "@/types/index";
+
+type NotificationType =
+  | 'INFO'
+  | 'SUCCESS'
+  | 'WARNING'
+  | 'ERROR'
+  | 'ALERT'
+  | 'REMINDER'
+  | 'APPROVAL'
+  | 'SYSTEM'
+  | 'TIME_RECORD_SUCCESS'
+  | 'TIME_RECORD_FAILED'
+  | 'ADJUSTMENT_REQUEST'
+  | 'ADJUSTMENT_APPROVED'
+  | 'ADJUSTMENT_REJECTED'
+  | 'COMPLIANCE_WARNING'
+  | 'SYSTEM_ALERT';
 
 interface NotificationBellProps {
   userId: string;
@@ -51,7 +68,7 @@ export function NotificationBell({ userId, className }: NotificationBellProps) {
       if (response.ok) {
         setNotifications(prev => 
           prev.map(n => 
-            n.id === notificationId ? { ...n, read: true } : n
+            n.id === notificationId ? { ...n, isRead: true } : n
           )
         );
         setUnreadCount(prev => Math.max(0, prev - 1));
@@ -95,7 +112,7 @@ export function NotificationBell({ userId, className }: NotificationBellProps) {
   };
 
   const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
+    const date = new Date(String(dateString));
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
 
@@ -151,10 +168,10 @@ export function NotificationBell({ userId, className }: NotificationBellProps) {
                 <div className="max-h-96 overflow-y-auto">
                   {notifications.map((notification, index) => (
                     <div key={notification.id}>
-                      <div className={`p-3 hover:bg-gray-50 ${!notification.read ? 'bg-blue-50' : ''}`}>
+                      <div className={`p-3 hover:bg-gray-50 ${!notification.isRead ? 'bg-blue-50' : ''}`}>
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0 mt-0.5">
-                            {getNotificationIcon(notification.type)}
+                            {getNotificationIcon(notification.type as NotificationType)}
                           </div>
                           
                           <div className="flex-1 min-w-0">
@@ -168,7 +185,7 @@ export function NotificationBell({ userId, className }: NotificationBellProps) {
                                 >
                                   {notification.priority}
                                 </Badge>
-                                {!notification.read && (
+                                {!notification.isRead && (
                                   <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                                 )}
                               </div>
@@ -180,24 +197,26 @@ export function NotificationBell({ userId, className }: NotificationBellProps) {
                             
                             <div className="flex items-center justify-between">
                               <span className="text-xs text-gray-500">
-                                {formatTime(notification.createdAt)}
+                                {formatTime(String(notification.createdAt))}
                               </span>
                               
                               <div className="flex items-center gap-2">
-                                {notification.actionUrl && (
+                                {notification.metadata?.actionUrl && (
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => {
-                                      window.location.href = notification.actionUrl!;
+                                      if (typeof notification.metadata?.actionUrl === 'string') {
+                                        window.location.href = notification.metadata.actionUrl;
+                                      }
                                       setIsOpen(false);
                                     }}
                                   >
-                                    {notification.actionText || 'Ver'}
+                                    {notification.metadata?.actionText ?? 'Ver'}
                                   </Button>
                                 )}
                                 
-                                {!notification.read && (
+                                {!notification.isRead && (
                                   <Button
                                     size="sm"
                                     variant="ghost"

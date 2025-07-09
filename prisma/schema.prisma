@@ -641,13 +641,12 @@ enum SyncType {
 }
 
 enum SyncStatus {
-  PENDING
-  IN_PROGRESS
-  SUCCESS
+  IDLE
+  RUNNING
+  COMPLETED
   FAILED
-  RETRY
-  CANCELLED
-  CONFLICT
+  PAUSED
+  SCHEDULED
 }
 
 enum EntityType {
@@ -1233,6 +1232,8 @@ model ExecutiveDashboard {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  widgets       DashboardWidget[]
+
   @@index([companyId])
   @@index([createdBy])
   @@index([isDefault])
@@ -1296,6 +1297,8 @@ model BusinessKPI {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  values        KPIValue[]
+
   @@index([companyId])
   @@index([category])
   @@index([isActive])
@@ -1345,6 +1348,8 @@ model ReportTemplate {
   createdBy     String   // Usuário que criou
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  reports       GeneratedReport[]
 
   @@index([companyId])
   @@index([type])
@@ -1482,6 +1487,13 @@ model ExternalAPI {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  endpoints     APIEndpoint[]
+  requests      APIRequest[]
+  syncs         DataSync[]
+  rateLimits    APIRateLimit[]
+  monitoring    APIMonitoring[]
+  logs          IntegrationLog[]
+
   @@index([companyId])
   @@index([provider])
   @@index([isActive])
@@ -1517,6 +1529,7 @@ model APIEndpoint {
   updatedAt     DateTime @updatedAt
 
   api           ExternalAPI @relation(fields: [apiId], references: [id], onDelete: Cascade)
+  requests      APIRequest[]
 
   @@index([apiId])
   @@index([method])
@@ -1587,6 +1600,9 @@ model Webhook {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  deliveries    WebhookDelivery[]
+  logs          IntegrationLog[]
+
   @@index([companyId])
   @@index([isActive])
 }
@@ -1647,15 +1663,6 @@ model DataSync {
   @@index([apiId])
   @@index([status])
   @@index([isActive])
-}
-
-enum SyncStatus {
-  IDLE
-  RUNNING
-  COMPLETED
-  FAILED
-  PAUSED
-  SCHEDULED
 }
 
 model APIRateLimit {
@@ -1726,6 +1733,12 @@ model AIModel {
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  trainings     ModelTraining[]
+  predictions   Prediction[]
+  anomalies     AnomalyDetection[]
+  insights      AIInsight[]
+  performance   MLPerformance[]
 
   @@index([companyId])
   @@index([type])

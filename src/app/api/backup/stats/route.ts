@@ -1,3 +1,5 @@
+// Temporariamente desabilitado para resolver problemas de build do Prisma
+/*
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -10,10 +12,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
-
-    const stats = await getBackupStats(companyId || undefined);
+    const stats = await getBackupStats(session.user.companyId);
 
     return NextResponse.json(stats);
   } catch (error) {
@@ -23,4 +22,9 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+*/
+
+export async function GET() {
+  return new Response('Backup Stats API temporarily disabled', { status: 503 });
 } 

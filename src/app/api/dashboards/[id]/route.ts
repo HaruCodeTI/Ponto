@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -14,7 +14,7 @@ export async function GET(
     }
 
     const dashboard = await prisma.executiveDashboard.findUnique({
-      where: { id: params.id },
+      where: { id: context.params.id },
       include: {
         widgets: {
           orderBy: { order: 'asc' }
@@ -38,7 +38,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -58,7 +58,7 @@ export async function PUT(
     } = body;
 
     const dashboard = await prisma.executiveDashboard.update({
-      where: { id: params.id },
+      where: { id: context.params.id },
       data: {
         name,
         description,
@@ -82,7 +82,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -91,7 +91,7 @@ export async function DELETE(
     }
 
     await prisma.executiveDashboard.delete({
-      where: { id: params.id }
+      where: { id: context.params.id }
     });
 
     return NextResponse.json({ message: 'Dashboard excluído com sucesso' });

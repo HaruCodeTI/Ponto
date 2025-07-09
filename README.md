@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sistema de Ponto Eletrônico
 
-## Getting Started
+Sistema completo de ponto eletrônico desenvolvido com Next.js, TypeScript, Prisma e PostgreSQL.
 
-First, run the development server:
+## 🚀 Início Rápido
+
+### Com Docker (Recomendado)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Configuração inicial
+./scripts/docker-setup.sh
+
+# Ou manualmente:
+docker-compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Desenvolvimento Local
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Instalar dependências
+npm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Configurar banco de dados
+npx prisma generate
+npx prisma migrate deploy
 
-## Learn More
+# Executar em desenvolvimento
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 🐳 Docker
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Produção
+```bash
+# Iniciar todos os serviços
+docker-compose up -d
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Ver logs
+docker-compose logs -f app
+```
 
-## Deploy on Vercel
+### Desenvolvimento
+```bash
+# Iniciar ambiente de desenvolvimento
+./scripts/docker-dev.sh
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Ou manualmente:
+docker-compose up -d postgres redis
+docker-compose --profile dev up app-dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📋 Serviços
+
+- **🌐 Aplicação**: http://localhost:3000 (produção) / http://localhost:3001 (dev)
+- **🗄️ PostgreSQL**: localhost:5432
+- **🔴 Redis**: localhost:6379
+
+## 🛠️ Tecnologias
+
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Backend**: Next.js API Routes, Prisma ORM
+- **Banco**: PostgreSQL
+- **Cache**: Redis
+- **UI**: TailwindCSS, Shadcn UI, Radix UI
+- **Autenticação**: NextAuth.js
+- **Pagamentos**: Stripe
+
+## 📁 Estrutura
+
+```
+src/
+├── app/                 # App Router (Next.js 15)
+│   ├── api/            # API Routes
+│   ├── auth/           # Páginas de autenticação
+│   └── ...             # Outras páginas
+├── components/         # Componentes React
+├── lib/               # Utilitários e configurações
+└── types/             # Tipos TypeScript
+```
+
+## 🔧 Comandos Úteis
+
+```bash
+# Desenvolvimento
+npm run dev
+npm run build
+npm run lint
+
+# Banco de dados
+npx prisma studio
+npx prisma migrate dev
+npx prisma generate
+
+# Docker
+docker-compose up -d
+docker-compose down
+docker-compose logs -f
+```
+
+## 📚 Documentação
+
+- [Configuração Docker](DOCKER_SETUP.md)
+- [Setup do Projeto](SETUP.md)
+- [Configuração Stripe](STRIPE_SETUP.md)
+
+## 🚀 Deploy
+
+O projeto está configurado para deploy em produção com Docker. Veja [DOCKER_SETUP.md](DOCKER_SETUP.md) para detalhes.
+
+## 📄 Licença
+
+Este projeto é privado e proprietário.

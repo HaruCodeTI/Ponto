@@ -5,7 +5,7 @@ import { acknowledgeSecurityAlert } from '@/lib/audit-logs';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,7 +13,7 @@ export async function POST(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const alert = await acknowledgeSecurityAlert(params.id, session.user.id);
+    const alert = await acknowledgeSecurityAlert(context.params.id, session.user.id);
 
     return NextResponse.json(alert);
   } catch (error) {

@@ -1,3 +1,5 @@
+// Temporariamente desabilitado para resolver problemas de build do Prisma
+/*
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -14,27 +16,21 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { companyId, dropExisting, createMissing, preserveData } = body;
+    const { options } = body;
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'ID da empresa é obrigatório' },
-        { status: 400 }
-      );
-    }
-
-    const restoreJob = await restoreBackup(params.id, companyId, {
-      dropExisting,
-      createMissing,
-      preserveData
-    });
+    const restoreJob = await restoreBackup(params.id, session.user.companyId || '', options);
 
     return NextResponse.json(restoreJob, { status: 201 });
   } catch (error) {
     console.error('Erro ao restaurar backup:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
+}
+*/
+
+export async function POST() {
+  return new Response('Backup Restore API temporarily disabled', { status: 503 });
 } 

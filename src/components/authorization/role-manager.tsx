@@ -19,7 +19,7 @@ interface User {
 
 interface RoleManagerProps {
   users: User[];
-  onRoleChange: (userId: string, newRole: UserRole) => Promise<void>;
+  onRoleChange?: (userId: string, newRole: UserRole) => Promise<void>;
 }
 
 const roleLabels = {
@@ -68,7 +68,7 @@ export function RoleManager({ users, onRoleChange }: RoleManagerProps) {
 
     setIsChangingRole(true);
     try {
-      await onRoleChange(selectedUser.id, newRole as UserRole);
+      if (onRoleChange) await onRoleChange(selectedUser.id, newRole as UserRole);
       setSelectedUser(null);
       setNewRole('');
     } catch (error) {

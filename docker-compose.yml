@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # Banco de dados PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: ponto-postgres
+    environment:
+      POSTGRES_DB: ponto
+      POSTGRES_USER: ponto_user
+      POSTGRES_PASSWORD: ponto_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migration_8_16_8_17.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - ponto-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ponto_user -d ponto"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis para cache e sessões
+  redis:
+    image: redis:7-alpine
+    container_name: ponto-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ponto-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Aplicação Next.js
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ponto-app
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://ponto_user:ponto_password@postgres:5432/ponto
+      - REDIS_URL=redis://redis:6379
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=your-secret-key-here
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ponto-network
+    restart: unless-stopped
+
+  # Aplicação de desenvolvimento (opcional)
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ponto-app-dev
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://ponto_user:ponto_password@postgres:5432/ponto
+      - REDIS_URL=redis://redis:6379
+      - NEXTAUTH_URL=http://localhost:3001
+      - NEXTAUTH_SECRET=your-secret-key-here
+    ports:
+      - "3001:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ponto-network
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  ponto-network:
+    driver: bridge 

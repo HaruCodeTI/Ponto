@@ -1,0 +1,75 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { 
+  generateTimeReceipt, 
+  findTimeReceipts 
+} from '@/lib/time-receipt';
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { timeRecordId, employeeId, companyId, receiptType } = body;
+
+    if (!timeRecordId || !employeeId || !companyId || !receiptType) {
+      return NextResponse.json(
+        { error: 'Dados obrigatórios não fornecidos' },
+        { status: 400 }
+      );
+    }
+
+    const receipt = await generateTimeReceipt(timeRecordId);
+
+    return NextResponse.json(receipt);
+  } catch (error) {
+    console.error('Erro ao gerar comprovante:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const timeRecordId = searchParams.get('timeRecordId');
+    const employeeId = searchParams.get('employeeId');
+    const companyId = searchParams.get('companyId');
+    const receiptType = searchParams.get('receiptType');
+    const isVerified = searchParams.get('isVerified');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+
+    const filters: any = {};
+    if (timeRecordId) filters.timeRecordId = timeRecordId;
+    if (employeeId) filters.employeeId = employeeId;
+    if (companyId) filters.companyId = companyId;
+    if (receiptType) filters.receiptType = receiptType;
+    if (isVerified !== null) filters.isVerified = isVerified === 'true';
+    if (startDate) filters.startDate = new Date(startDate);
+    if (endDate) filters.endDate = new Date(endDate);
+
+    const result = await findTimeReceipts(filters, page, limit);
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error('Erro ao buscar comprovantes:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+} 

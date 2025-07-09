@@ -767,21 +767,21 @@ export interface BackupValidationResult {
 export interface AuditLog {
   id: string;
   companyId: string;
-  userId?: string;
-  employeeId?: string;
-  sessionId?: string;
+  userId?: string | null;
+  employeeId?: string | null;
+  sessionId?: string | null;
   action: string;
   category: 'AUTHENTICATION' | 'AUTHORIZATION' | 'DATA_ACCESS' | 'DATA_MODIFICATION' | 'SYSTEM_CONFIG' | 'SECURITY' | 'COMPLIANCE' | 'BACKUP_RESTORE' | 'REPORT_GENERATION' | 'USER_MANAGEMENT' | 'EMPLOYEE_MANAGEMENT' | 'TIME_RECORD' | 'PAYROLL' | 'NOTIFICATION' | 'API_ACCESS' | 'FILE_OPERATION' | 'DATABASE_OPERATION' | 'NETWORK_ACCESS' | 'PRIVACY' | 'OTHER';
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   status: 'SUCCESS' | 'FAILURE' | 'WARNING' | 'PENDING' | 'CANCELLED';
-  resourceType?: string;
-  resourceId?: string;
+  resourceType?: string | null;
+  resourceId?: string | null;
   oldValues?: any;
   newValues?: any;
-  metadata: AuditMetadata;
-  ipAddress?: string;
-  userAgent?: string;
-  location?: string;
+  metadata: any;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  location?: string | null;
   timestamp: Date;
   createdAt: Date;
 }
@@ -839,8 +839,8 @@ export interface SecurityAlert {
   metadata: SecurityAlertMetadata;
   acknowledgedBy?: string;
   acknowledgedAt?: Date;
-  resolvedBy?: string;
-  resolvedAt?: Date;
+  resolvedBy?: string | null;
+  resolvedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -1846,15 +1846,15 @@ export interface AIModel {
   id: string;
   companyId: string;
   name: string;
-  description?: string;
+  description?: string | null;
   type: 'ANOMALY_DETECTION' | 'PREDICTIVE_ANALYTICS' | 'PATTERN_RECOGNITION' | 'CLASSIFICATION' | 'REGRESSION' | 'CLUSTERING' | 'RECOMMENDATION' | 'NLP' | 'COMPUTER_VISION' | 'TIME_SERIES' | 'FRAUD_DETECTION' | 'CUSTOM';
   version: string;
   status: 'DRAFT' | 'TRAINING' | 'ACTIVE' | 'INACTIVE' | 'DEPRECATED' | 'ERROR' | 'UPDATING';
-  config: ModelConfig;
-  metadata: ModelMetadata;
-  accuracy?: number;
-  lastTrained?: Date;
-  nextTraining?: Date;
+  config: any;
+  metadata: any;
+  accuracy?: number | null;
+  lastTrained?: Date | null;
+  nextTraining?: Date | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -1936,14 +1936,14 @@ export interface ModelTraining {
   modelId: string;
   version: string;
   status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'VALIDATING';
-  config: TrainingConfig;
-  dataset: DatasetInfo;
-  metrics: TrainingMetrics;
-  artifacts: TrainingArtifacts;
+  config: any;
+  dataset: any;
+  metrics: any;
+  artifacts: any;
   startTime: Date;
-  endTime?: Date;
-  duration?: number;
-  errorMessage?: string;
+  endTime?: Date | null;
+  duration?: number | null;
+  errorMessage?: string | null;
   createdBy: string;
   createdAt: Date;
 }
@@ -2009,7 +2009,7 @@ export interface Prediction {
   output: any;
   confidence: number;
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
-  metadata: PredictionMetadata;
+  metadata: any;
   processingTime: number;
   createdAt: Date;
 }
@@ -2026,18 +2026,18 @@ export interface PredictionMetadata {
 export interface AnomalyDetection {
   id: string;
   companyId: string;
-  modelId: string;
+  modelId: string | null;
   dataSource: string;
   anomalyType: 'TIME_RECORD_ANOMALY' | 'LOCATION_ANOMALY' | 'DEVICE_ANOMALY' | 'BEHAVIOR_ANOMALY' | 'PATTERN_ANOMALY' | 'SYSTEM_ANOMALY' | 'SECURITY_ANOMALY' | 'PERFORMANCE_ANOMALY' | 'CUSTOM';
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   description: string;
-  data: AnomalyData;
+  data: any;
   score: number;
   threshold: number;
   isResolved: boolean;
-  resolvedAt?: Date;
-  resolvedBy?: string;
-  resolution?: string;
+  resolvedAt?: Date | null;
+  resolvedBy?: string | null;
+  resolution?: string | null;
   createdAt: Date;
 }
 
@@ -2199,18 +2199,18 @@ export interface ExperimentResults {
 export interface AIInsight {
   id: string;
   companyId: string;
-  modelId?: string;
+  modelId?: string | null;
   type: 'TREND_ANALYSIS' | 'PATTERN_DISCOVERY' | 'ANOMALY_INSIGHT' | 'PREDICTION_INSIGHT' | 'OPTIMIZATION' | 'RISK_ALERT' | 'OPPORTUNITY' | 'PERFORMANCE_INSIGHT' | 'CUSTOM';
   title: string;
   description: string;
-  data: InsightData;
+  data: any;
   confidence: number;
   impact: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-  recommendations: InsightRecommendation[];
+  recommendations: any;
   isRead: boolean;
   isActioned: boolean;
-  actionedAt?: Date;
-  actionedBy?: string;
+  actionedAt?: Date | null;
+  actionedBy?: string | null;
   createdAt: Date;
 }
 

@@ -42,7 +42,6 @@ export default function AuthorizationPage() {
           <Suspense fallback={<div>Carregando...</div>}>
             <RoleManager 
               users={[]} // Será carregado via API
-              onRoleChange={async () => {}} // Será implementado
             />
           </Suspense>
         </TabsContent>
@@ -51,8 +50,6 @@ export default function AuthorizationPage() {
           <Suspense fallback={<div>Carregando...</div>}>
             <AuditLogsViewer 
               logs={[]} // Será carregado via API
-              onFilterChange={() => {}} // Será implementado
-              onExport={() => {}} // Será implementado
             />
           </Suspense>
         </TabsContent>

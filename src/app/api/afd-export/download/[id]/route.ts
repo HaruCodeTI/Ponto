@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -14,10 +14,7 @@ export async function GET(
     }
 
     const afdExport = await prisma.aFDExport.findUnique({
-      where: { id: params.id },
-      include: {
-        company: true
-      }
+      where: { id: context.params.id }
     });
 
     if (!afdExport) {
@@ -29,12 +26,13 @@ export async function GET(
     }
 
     // Simular geração de arquivo AFD
-    const fileContent = `AFD - ${afdExport.month}\nRegistros: ${afdExport.recordCount}\nStatus: ${afdExport.status}`;
+    const monthStr = afdExport.startDate.toISOString().slice(0,7);
+    const fileContent = `AFD - ${monthStr}\nRegistros: ${afdExport.recordCount}\nStatus: ${afdExport.status}`;
 
     return new NextResponse(fileContent, {
       headers: {
         'Content-Type': 'text/plain',
-        'Content-Disposition': `attachment; filename="afd-${afdExport.month}.txt"`
+        'Content-Disposition': `attachment; filename="${afdExport.fileName}"`
       }
     });
   } catch (error) {

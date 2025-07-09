@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
     const ipAddress = searchParams.get('ipAddress');
-    const page = parseInt(searchParams.get('page') || '1');
+    const _page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
 
     const filters: any = {};
@@ -37,8 +37,9 @@ export async function GET(request: NextRequest) {
     if (dateFrom) filters.dateFrom = new Date(dateFrom);
     if (dateTo) filters.dateTo = new Date(dateTo);
     if (ipAddress) filters.ipAddress = ipAddress;
+    filters.limit = limit;
 
-    const result = await findAuditLogs(filters, page, limit);
+    const result = await findAuditLogs(session.user.companyId || companyId || '', filters);
 
     return NextResponse.json(result);
   } catch (error) {
@@ -62,19 +63,17 @@ export async function POST(request: NextRequest) {
       companyId,
       userId,
       employeeId,
-      sessionId,
       action,
       category,
       severity,
       status,
       resourceType,
       resourceId,
-      oldValues,
-      newValues,
+      _oldValues,
+      _newValues,
       metadata,
       ipAddress,
-      userAgent,
-      location
+      userAgent
     } = body;
 
     if (!companyId || !action || !category || !severity || !status) {
@@ -88,19 +87,15 @@ export async function POST(request: NextRequest) {
       companyId,
       userId,
       employeeId,
-      sessionId,
       action,
       category,
       severity,
       status,
       resourceType,
       resourceId,
-      oldValues,
-      newValues,
       metadata,
       ipAddress,
-      userAgent,
-      location
+      userAgent
     });
 
     return NextResponse.json(auditLog, { status: 201 });

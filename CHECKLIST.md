@@ -209,21 +209,21 @@
 
 ### ✅ Compliance Legal (Portaria 671/2021)
 
-- [ ] 8.13. Implementar registro de ponto imutável (sem edição/apagação)
-- [ ] 8.14. Implementar sistema de justificativas para ajustes (mantendo original)
-- [ ] 8.15. Implementar logs completos de uso, falhas e sincronizações
-- [ ] 8.16. Implementar armazenamento seguro com redundância
-- [ ] 8.17. Implementar backup automático diário
-- [ ] 8.18. Implementar retenção de dados por 5 anos mínimo
-- [ ] 8.19. Implementar comprovante de ponto imediato
-- [ ] 8.20. Implementar geração de Espelho de Ponto mensal
-- [ ] 8.21. Implementar exportação AFD para fiscalização
-- [ ] 8.22. Implementar logs de acesso ao sistema
-- [ ] 8.23. Implementar logs de mudanças administrativas
-- [ ] 8.24. Implementar política de privacidade (LGPD)
-- [ ] 8.25. Implementar termo de consentimento para dados
-- [ ] 8.26. Implementar criptografia de dados sensíveis
-- [ ] 8.27. Implementar hash/código de verificação para registros
+- [x] 8.13. Implementar registro de ponto imutável (sem edição/apagação)
+- [x] 8.14. Implementar sistema de justificativas para ajustes (mantendo original)
+- [x] 8.15. Implementar logs completos de uso, falhas e sincronizações
+- [x] 8.16. Implementar armazenamento seguro com redundância
+- [x] 8.17. Implementar backup automático diário
+- [x] 8.18. Implementar retenção de dados por 5 anos mínimo
+- [x] 8.19. Implementar comprovante de ponto imediato
+- [x] 8.20. Implementar geração de Espelho de Ponto mensal
+- [x] 8.21. Implementar exportação AFD para fiscalização
+- [x] 8.22. Implementar logs de acesso ao sistema
+- [x] 8.23. Implementar logs de mudanças administrativas
+- [x] 8.24. Implementar política de privacidade (LGPD)
+- [x] 8.25. Implementar termo de consentimento para dados
+- [x] 8.26. Implementar criptografia de dados sensíveis
+- [x] 8.27. Implementar hash/código de verificação para registros
 
 ---
 
@@ -347,4 +347,12 @@
 
 ## Regra de Processo
 - **Antes de qualquer nova ação/módulo**, ler este arquivo inteiro para garantir continuidade e coerência.
+
+📝 PRÓXIMOS PASSOS RECOMENDADOS
+Corrigir erros críticos (1-2 horas)
+Limpar avisos principais (4-6 horas)
+Adicionar testes (8-12 horas)
+Otimizar performance (4-6 horas)
+Documentar APIs (2-4 horas)
+Tempo estimado para produção: 20-30 horas de trabalho
 
