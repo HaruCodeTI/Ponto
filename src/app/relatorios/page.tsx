@@ -1,4 +1,3 @@
-import { Metadata } from 'next';
 import { TimeRecordReportTable } from "@/components/time-record/time-record-report-table";
 import { MonthlyReport } from "@/components/reports/monthly-report";
 import { HoursReport } from "@/components/reports/hours-report";
@@ -14,11 +13,7 @@ import { AdvancedScheduler } from "@/components/reports/advanced-scheduler";
 import { TimeSheetMirrorViewer } from "@/components/time-sheet-mirror/time-sheet-mirror-viewer";
 import { AFDExportViewer } from "@/components/afd-export/afd-export-viewer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-export const metadata: Metadata = {
-  title: 'Relatórios | Sistema de Ponto',
-  description: 'Gerencie relatórios, agendamentos e configurações de formato',
-};
+import { metadata } from './metadata';
 
 export default function RelatoriosPage() {
   return (

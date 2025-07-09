@@ -1,10 +1,5 @@
-import { Metadata } from 'next';
 import { AIDashboard } from '@/components/ai-ml/ai-dashboard';
-
-export const metadata: Metadata = {
-  title: 'IA & Machine Learning | Sistema de Ponto',
-  description: 'Dashboard avançado de inteligência artificial e machine learning para análise preditiva e detecção de anomalias',
-};
+import { metadata } from './metadata';
 
 export default function IAMLPage() {
   return (

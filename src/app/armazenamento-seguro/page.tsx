@@ -1,12 +1,7 @@
-import { Metadata } from 'next';
 import { SecureStorageManager } from '@/components/secure-storage/secure-storage-manager';
 import { DisasterRecoveryManager } from '@/components/secure-storage/disaster-recovery-manager';
 import { DataRetentionManager } from '@/components/secure-storage/data-retention-manager';
-
-export const metadata: Metadata = {
-  title: 'Armazenamento Seguro - Sistema de Ponto',
-  description: 'Módulos 8.16, 8.17 e 8.18 - Armazenamento seguro com redundância, disaster recovery e retenção de dados',
-};
+import { metadata } from './metadata';
 
 export default function SecureStoragePage() {
   return (

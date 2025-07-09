@@ -1,10 +1,5 @@
-import { Metadata } from 'next';
 import { BackupManager } from '@/components/backup/backup-manager';
-
-export const metadata: Metadata = {
-  title: 'Sistema de Backup e Restauração | Ponto',
-  description: 'Gerencie backups automáticos, restaurações e agendamentos do sistema de ponto eletrônico',
-};
+import { metadata } from './metadata';
 
 export default function BackupPage() {
   return (
