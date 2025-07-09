@@ -11,7 +11,7 @@ export interface EmailData {
   from?: string;
 }
 
-export async function sendEmail({ to, subject, html, from = 'Ponto <noreply@seudominio.com>' }: EmailData) {
+export async function sendEmail({ to, subject, html, from = 'Ponto <onboarding@resend.dev>' }: EmailData) {
   if (!resend) {
     console.warn('Resend não configurado. Email não será enviado.');
     console.log('Email que seria enviado:', { to, subject, html });
@@ -35,7 +35,9 @@ export async function sendEmail({ to, subject, html, from = 'Ponto <noreply@seud
 }
 
 export async function sendVerificationEmail(email: string, token: string) {
-  const verificationUrl = `${process.env.NEXTAUTH_URL}/auth/verify?token=${token}`;
+  // Usa a URL correta baseada no ambiente
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'https://ponto-orpin.vercel.app';
+  const verificationUrl = `${baseUrl}/auth/verify?token=${token}`;
   
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -65,7 +67,9 @@ export async function sendVerificationEmail(email: string, token: string) {
 }
 
 export async function sendPasswordResetEmail(email: string, token: string) {
-  const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`;
+  // Usa a URL correta baseada no ambiente
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'https://ponto-orpin.vercel.app';
+  const resetUrl = `${baseUrl}/auth/reset-password?token=${token}`;
   
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
