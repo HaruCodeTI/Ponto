@@ -86,4 +86,12 @@ declare namespace google.maps {
   }
 }
 
+declare global {
+  interface Window {
+    google: {
+      maps: any;
+    };
+  }
+}
+
 export {};

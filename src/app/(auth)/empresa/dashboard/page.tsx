@@ -1,23 +1,11 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCoordinates } from "@/lib/geolocation";
 import { Company } from "@/types/company";
 import { Button } from "@/components/ui/button";
-
-// Mock temporário para exibição
-const company: Company = {
-  id: "1",
-  name: "Acme Ltda",
-  cnpj: "12.345.678/0001-99",
-  address: "Rua Exemplo, 123, Centro, São Paulo, SP",
-  latitude: -23.5505,
-  longitude: -46.6333,
-  operationType: "PRESENCIAL",
-  employeeCount: 42,
-  plan: "PROFESSIONAL",
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
+import { useEffect, useState } from "react";
 
 function EstatisticasEmpresa({ company }: { company: Company }) {
   return (
@@ -69,6 +57,42 @@ function GestaoPlanoEmpresa({ company }: { company: Company }) {
 }
 
 export default function EmpresaDashboardPage() {
+  const [company, setCompany] = useState<Company | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCompany();
+  }, []);
+
+  async function fetchCompany() {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/company');
+      if (res.ok) {
+        const data = await res.json();
+        setCompany(data.company);
+      } else {
+        setCompany(null);
+      }
+    } catch {
+      setCompany(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return <div className="container mx-auto py-8">Carregando...</div>;
+  }
+
+  if (!company) {
+    return (
+      <div className="container mx-auto py-8">
+        <p className="text-muted-foreground">Nenhuma empresa cadastrada. Cadastre uma nova empresa para começar.</p>
+      </div>
+    );
+  }
+
   return (
     <main className="container mx-auto py-8 grid gap-8 max-w-3xl">
       <h1 className="text-3xl font-bold">Dashboard da Empresa</h1>

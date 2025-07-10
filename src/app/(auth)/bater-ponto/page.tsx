@@ -18,6 +18,7 @@ import { WorkTimeValidator } from "@/components/time-record/work-time-validator"
 import Link from "next/link";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { createTimeRecordAuditLog } from "@/lib/time-record";
+import { AuthenticatedLayout } from "@/components/layouts/authenticated-layout";
 
 // Mock: dados da empresa e funcionário (substituir por dados reais do contexto)
 const companyLocation: Location = {
@@ -124,113 +125,115 @@ export default function BaterPontoPage() {
   };
 
   return (
-    <main className="container mx-auto py-8 max-w-2xl">
-      <h1 className="text-3xl font-bold mb-6 text-center">Bater Ponto</h1>
-      <div className="flex justify-center mb-4 gap-2">
-        <Dialog open={showNFC} onOpenChange={setShowNFC}>
-          <DialogTrigger asChild>
-            <Button variant="secondary" type="button">
-              Autenticar por NFC
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Leitor de Crachá NFC</DialogTitle>
-            </DialogHeader>
-            <NFCReader />
-          </DialogContent>
-        </Dialog>
-        <Dialog open={showBiometric} onOpenChange={setShowBiometric}>
-          <DialogTrigger asChild>
-            <Button variant="secondary" type="button">
-              Autenticar por Biometria
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Autenticação Biométrica</DialogTitle>
-            </DialogHeader>
-            <BiometricAuth employeeId="1" />
-          </DialogContent>
-        </Dialog>
-        <div className="flex flex-col gap-1">
-          <Link href="/nfc/como-funciona" className="text-blue-600 underline text-sm flex items-center" target="_blank">
-            Como funciona NFC?
-          </Link>
-          <Link href="/biometric/como-funciona" className="text-blue-600 underline text-sm flex items-center" target="_blank">
-            Como funciona Biometria?
-          </Link>
+    <AuthenticatedLayout>
+      <main className="container mx-auto py-8 max-w-2xl">
+        <h1 className="text-3xl font-bold mb-6 text-center">Bater Ponto</h1>
+        <div className="flex justify-center mb-4 gap-2">
+          <Dialog open={showNFC} onOpenChange={setShowNFC}>
+            <DialogTrigger asChild>
+              <Button variant="secondary" type="button">
+                Autenticar por NFC
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Leitor de Crachá NFC</DialogTitle>
+              </DialogHeader>
+              <NFCReader />
+            </DialogContent>
+          </Dialog>
+          <Dialog open={showBiometric} onOpenChange={setShowBiometric}>
+            <DialogTrigger asChild>
+              <Button variant="secondary" type="button">
+                Autenticar por Biometria
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Autenticação Biométrica</DialogTitle>
+              </DialogHeader>
+              <BiometricAuth employeeId="1" />
+            </DialogContent>
+          </Dialog>
+          <div className="flex flex-col gap-1">
+            <Link href="/nfc/como-funciona" className="text-blue-600 underline text-sm flex items-center" target="_blank">
+              Como funciona NFC?
+            </Link>
+            <Link href="/biometric/como-funciona" className="text-blue-600 underline text-sm flex items-center" target="_blank">
+              Como funciona Biometria?
+            </Link>
+          </div>
         </div>
-      </div>
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Etapa 1: Validação de Localização</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Suspense fallback={<p>Carregando localização...</p>}>
-            <LocationValidator
-              companyLocation={companyLocation}
-              operationType={operationType}
-              isWorkingFromHome={isWorkingFromHome}
-              onValidationChange={setLocationValidation}
-            />
-          </Suspense>
-        </CardContent>
-      </Card>
-      {operationType === "HOME_OFFICE" || (operationType === "HYBRID" && isWorkingFromHome) ? (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Etapa 2: Validação por IP</CardTitle>
+            <CardTitle>Etapa 1: Validação de Localização</CardTitle>
           </CardHeader>
           <CardContent>
-            <Suspense fallback={<p>Validando IP...</p>}>
-              <IPValidator homeLocation={companyLocation} onValidationChange={setIPValidation} />
+            <Suspense fallback={<p>Carregando localização...</p>}>
+              <LocationValidator
+                companyLocation={companyLocation}
+                operationType={operationType}
+                isWorkingFromHome={isWorkingFromHome}
+                onValidationChange={setLocationValidation}
+              />
             </Suspense>
           </CardContent>
         </Card>
-      ) : null}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Etapa 3: Validação de Horário</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <WorkTimeValidator
-            recordType="ENTRY"
-            employeeId={employeeId}
-            onValidation={setWorkTimeValidation}
-            showDetails={false}
-          />
-        </CardContent>
-      </Card>
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Etapa 4: Validação de Dispositivo</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DeviceValidator onValidationChange={setDeviceValidation} />
-        </CardContent>
-      </Card>
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Etapa 5: Captura de Foto (Opcional)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PhotoCapture config={DEFAULT_PHOTO_CONFIG} onPhotoCapture={setPhotoResult} />
-        </CardContent>
-      </Card>
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      <Button
-        onClick={handleRegister}
-        disabled={!canRegister || loading}
-        className="w-full mt-4"
-        size="lg"
-      >
-        {loading ? "Registrando..." : "Bater Ponto"}
-      </Button>
-    </main>
+        {operationType === "HOME_OFFICE" || (operationType === "HYBRID" && isWorkingFromHome) ? (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Etapa 2: Validação por IP</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<p>Validando IP...</p>}>
+                <IPValidator homeLocation={companyLocation} onValidationChange={setIPValidation} />
+              </Suspense>
+            </CardContent>
+          </Card>
+        ) : null}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Etapa 3: Validação de Horário</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <WorkTimeValidator
+              recordType="ENTRY"
+              employeeId={employeeId}
+              onValidation={setWorkTimeValidation}
+              showDetails={false}
+            />
+          </CardContent>
+        </Card>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Etapa 4: Validação de Dispositivo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DeviceValidator onValidationChange={setDeviceValidation} />
+          </CardContent>
+        </Card>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Etapa 5: Captura de Foto (Opcional)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PhotoCapture config={DEFAULT_PHOTO_CONFIG} onPhotoCapture={setPhotoResult} />
+          </CardContent>
+        </Card>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        <Button
+          onClick={handleRegister}
+          disabled={!canRegister || loading}
+          className="w-full mt-4"
+          size="lg"
+        >
+          {loading ? "Registrando..." : "Bater Ponto"}
+        </Button>
+      </main>
+    </AuthenticatedLayout>
   );
 } 

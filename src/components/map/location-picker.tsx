@@ -1,4 +1,3 @@
-/// <reference types="@types/google.maps" />
 "use client";
 
 import { Loader } from "@googlemaps/js-api-loader";
@@ -23,6 +22,8 @@ export function LocationPicker({
   apiKey,
   className,
 }: LocationPickerProps) {
+  console.log("GOOGLE_MAPS_API_KEY recebida:", apiKey);
+
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [marker, setMarker] = useState<google.maps.Marker | null>(null);
@@ -42,6 +43,8 @@ export function LocationPicker({
     loader
       .load()
       .then(() => {
+        console.log("google global:", typeof window.google, window.google);
+        console.log("google.maps disponível:", !!window.google?.maps);
         if (!mapRef.current) return;
 
         const defaultLocation = initialLocation || {
@@ -172,8 +175,7 @@ export function LocationPicker({
       <CardContent className="space-y-4">
         <div
           ref={mapRef}
-          className="h-64 w-full rounded-lg border"
-          style={{ minHeight: "256px" }}
+          style={{ minHeight: "384px", height: "384px", width: "100%", border: "1px solid #ccc" }}
         />
         {selectedLocation && (
           <div className="space-y-2">

@@ -15,15 +15,16 @@ export async function POST(req: NextRequest) {
         name: data.name,
         cnpj: data.cnpj,
         address: data.address,
-        latitude: data.latitude,
-        longitude: data.longitude,
+        latitude: data.latitude !== undefined ? Number(data.latitude) : null,
+        longitude: data.longitude !== undefined ? Number(data.longitude) : null,
         operationType: data.operationType as OperationType,
-        employeeCount: data.employeeCount ?? 0,
+        employeeCount: data.employeeCount !== undefined ? Number(data.employeeCount) : 0,
         plan: data.plan as Plan,
       },
     });
     return NextResponse.json(company, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("Erro ao cadastrar empresa:", error);
     return NextResponse.json({ error: "Erro ao cadastrar empresa" }, { status: 500 });
   }
 }
@@ -50,7 +51,20 @@ export async function PATCH(req: NextRequest) {
       },
     });
     return NextResponse.json(company, { status: 200 });
-  } catch {
+  } catch (error) {
+    console.error("Erro ao atualizar empresa:", error);
     return NextResponse.json({ error: "Erro ao atualizar empresa" }, { status: 500 });
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const company = await prisma.company.findFirst();
+    if (!company) {
+      return NextResponse.json({ company: null }, { status: 200 });
+    }
+    return NextResponse.json({ company }, { status: 200 });
+  } catch {
+    return NextResponse.json({ error: "Erro ao buscar empresa" }, { status: 500 });
   }
 } 
