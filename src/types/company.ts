@@ -67,6 +67,7 @@ export interface Company {
   name: string;
   cnpj: string;
   address: string;
+  cep?: string;
   latitude?: number;
   longitude?: number;
   operationType: OperationType;

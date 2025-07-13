@@ -4,7 +4,6 @@ import { Loader } from "@googlemaps/js-api-loader";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Location } from "@/lib/geolocation";
 
 /* global google */
@@ -22,8 +21,6 @@ export function LocationPicker({
   apiKey,
   className,
 }: LocationPickerProps) {
-  console.log("GOOGLE_MAPS_API_KEY recebida:", apiKey);
-
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [marker, setMarker] = useState<google.maps.Marker | null>(null);
@@ -33,70 +30,18 @@ export function LocationPicker({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Carrega a API do Google Maps
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     const loader = new Loader({
       apiKey,
       version: "weekly",
-      libraries: ["places"],
+      libraries: ["places", "marker"], // Adiciona marker
     });
-
     loader
       .load()
       .then(() => {
-        console.log("google global:", typeof window.google, window.google);
-        console.log("google.maps disponível:", !!window.google?.maps);
-        if (!mapRef.current) return;
-
-        const defaultLocation = initialLocation || {
-          latitude: -23.5505, // São Paulo
-          longitude: -46.6333,
-        };
-
-        const mapInstance = new google.maps.Map(mapRef.current, {
-          center: { lat: defaultLocation.latitude, lng: defaultLocation.longitude },
-          zoom: 15,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-        });
-
-        const markerInstance = new google.maps.Marker({
-          position: { lat: defaultLocation.latitude, lng: defaultLocation.longitude },
-          map: mapInstance,
-          draggable: true,
-          title: "Localização da empresa",
-        });
-
-        setMap(mapInstance);
-        setMarker(markerInstance);
-        setSelectedLocation(defaultLocation);
-
-        // Event listener para quando o marcador é arrastado
-        markerInstance.addListener("dragend", () => {
-          const position = markerInstance.getPosition();
-          if (position) {
-            const newLocation: Location = {
-              latitude: position.lat(),
-              longitude: position.lng(),
-            };
-            setSelectedLocation(newLocation);
-            onLocationSelect(newLocation);
-          }
-        });
-
-        // Event listener para clique no mapa
-        mapInstance.addListener("click", (event: google.maps.MapMouseEvent) => {
-          if (event.latLng) {
-            const newLocation: Location = {
-              latitude: event.latLng.lat(),
-              longitude: event.latLng.lng(),
-            };
-            markerInstance.setPosition(event.latLng);
-            setSelectedLocation(newLocation);
-            onLocationSelect(newLocation);
-          }
-        });
-
         setLoading(false);
       })
       .catch((err) => {
@@ -104,7 +49,59 @@ export function LocationPicker({
         setLoading(false);
         console.error("Erro ao carregar Google Maps:", err);
       });
-  }, [apiKey, initialLocation, onLocationSelect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey]);
+
+  // Inicializa o mapa e o novo marker
+  useEffect(() => {
+    if (loading || error || !window.google || !mapRef.current) return;
+    const defaultLocation = initialLocation || {
+      latitude: -23.5505,
+      longitude: -46.6333,
+    };
+    const mapInstance = new google.maps.Map(mapRef.current, {
+      center: { lat: defaultLocation.latitude, lng: defaultLocation.longitude },
+      zoom: 15,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+    });
+    // Novo marker
+    const markerInstance = new google.maps.marker.AdvancedMarkerElement({
+      map: mapInstance,
+      position: { lat: Number(defaultLocation.latitude), lng: Number(defaultLocation.longitude) },
+      title: "Localização da empresa",
+      gmpDraggable: true,
+    });
+    setMap(mapInstance);
+    setMarker(markerInstance as any); // para manter tipagem
+    setSelectedLocation(defaultLocation);
+    // Drag end
+    markerInstance.addListener("dragend", (event: any) => {
+      const pos = markerInstance.position;
+      if (pos) {
+        const newLocation: Location = {
+          latitude: typeof pos.lat === "function" ? pos.lat() : pos.lat,
+          longitude: typeof pos.lng === "function" ? pos.lng() : pos.lng,
+        };
+        setSelectedLocation(newLocation);
+        onLocationSelect(newLocation);
+      }
+    });
+    // Click no mapa
+    mapInstance.addListener("click", (event: google.maps.MapMouseEvent) => {
+      if (event.latLng) {
+        const newLocation: Location = {
+          latitude: event.latLng.lat(),
+          longitude: event.latLng.lng(),
+        };
+        markerInstance.position = event.latLng;
+        setSelectedLocation(newLocation);
+        onLocationSelect(newLocation);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, error, mapRef.current]);
 
   const handleUseCurrentLocation = () => {
     if (navigator.geolocation) {
@@ -114,7 +111,6 @@ export function LocationPicker({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           };
-
           if (map && marker) {
             const latLng = new google.maps.LatLng(
               currentLocation.latitude,
@@ -126,9 +122,8 @@ export function LocationPicker({
             onLocationSelect(currentLocation);
           }
         },
-        (error) => {
+        () => {
           setError("Erro ao obter localização atual");
-          console.error("Erro de geolocalização:", error);
         },
       );
     } else {
@@ -138,59 +133,49 @@ export function LocationPicker({
 
   if (loading) {
     return (
-      <Card className={className}>
-        <CardContent className="flex h-64 items-center justify-center">
-          <div className="text-center">
-            <div className="border-primary mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-            <p>Carregando mapa...</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className={className + " flex flex-col items-center justify-center w-full"}>
+        <div className="border-primary mb-2 h-8 w-8 animate-spin rounded-full border-b-2" />
+        <p>Carregando mapa...</p>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card className={className}>
-        <CardContent className="flex h-64 items-center justify-center">
-          <div className="text-center">
-            <p className="text-destructive mb-2">{error}</p>
-            <Button onClick={() => window.location.reload()}>Tentar novamente</Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className={className + " flex flex-col items-center justify-center w-full"}>
+        <p className="text-destructive mb-2">{error}</p>
+        <Button onClick={() => window.location.reload()}>Tentar novamente</Button>
+      </div>
     );
   }
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Selecionar Localização</span>
-          <Button onClick={handleUseCurrentLocation} variant="outline" size="sm">
-            📍 Minha Localização
-          </Button>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div
-          ref={mapRef}
-          style={{ minHeight: "384px", height: "384px", width: "100%", border: "1px solid #ccc" }}
-        />
-        {selectedLocation && (
-          <div className="space-y-2">
-            <Badge variant="secondary" className="w-fit">
-              Localização Selecionada
-            </Badge>
-            <p className="text-muted-foreground text-sm">
-              Latitude: {selectedLocation.latitude.toFixed(6)}
-            </p>
-            <p className="text-muted-foreground text-sm">
-              Longitude: {selectedLocation.longitude.toFixed(6)}
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className={className + " w-full max-w-full"}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-semibold">Selecionar Localização</span>
+        <Button onClick={handleUseCurrentLocation} variant="outline" size="sm">
+          📍 Minha Localização
+        </Button>
+      </div>
+      <div
+        ref={mapRef}
+        style={{ 
+          minHeight: "384px", 
+          height: "384px", 
+          width: "100%", 
+          border: "1px solid #ccc", 
+          borderRadius: "8px",
+          backgroundColor: "#f0f0f0"
+        }}
+        className="mb-2"
+      />
+      {selectedLocation && (
+        <div className="space-y-1">
+          <Badge variant="secondary" className="w-fit">Localização Selecionada</Badge>
+          <div className="text-muted-foreground text-sm">Latitude: {selectedLocation.latitude.toFixed(6)}</div>
+          <div className="text-muted-foreground text-sm">Longitude: {selectedLocation.longitude.toFixed(6)}</div>
+        </div>
+      )}
+    </div>
   );
 }

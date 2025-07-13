@@ -44,6 +44,10 @@ export function CompanyForm({ onSubmit, initialValues }: CompanyFormProps) {
   const [neighborhood, setNeighborhood] = React.useState("");
   const [city, setCity] = React.useState("");
   const [uf, setUf] = React.useState("");
+  const [cep, setCep] = React.useState("");
+  const [isCepLoading, setIsCepLoading] = React.useState(false);
+
+  const isEnderecoCompleto = street && number && neighborhood && city && uf;
 
   React.useEffect(() => {
     if (initialValues?.address) {
@@ -60,7 +64,7 @@ export function CompanyForm({ onSubmit, initialValues }: CompanyFormProps) {
   React.useEffect(() => {
     const address = `${street}, ${number}, ${neighborhood}, ${city}, ${uf}`;
     form.setValue('address', address);
-  }, [street, number, neighborhood, city, uf]);
+  }, [street, number, neighborhood, city, uf, form]);
 
   // Buscar lat/lng automaticamente ao preencher endereço
   React.useEffect(() => {
@@ -76,18 +80,39 @@ export function CompanyForm({ onSubmit, initialValues }: CompanyFormProps) {
             form.setValue('longitude', location.lng);
           }
         } catch {
-          // nada a fazer
+          /* ignorar erro de geocoding */
         }
       }
     };
     fetchLatLng();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [street, number, neighborhood, city, uf]);
+  }, [street, number, neighborhood, city, uf, isEnderecoCompleto, form]);
 
-  const isEnderecoCompleto = street && number && neighborhood && city && uf;
+  // Busca automática de endereço pelo CEP
+  React.useEffect(() => {
+    const fetchCep = async () => {
+      if (cep.replace(/\D/g, "").length === 8) {
+        setIsCepLoading(true);
+        try {
+          const res = await fetch(`https://viacep.com.br/ws/${cep.replace(/\D/g, "")}/json/`);
+          const data = await res.json();
+          if (!data.erro) {
+            setStreet(data.logradouro || "");
+            setNeighborhood(data.bairro || "");
+            setCity(data.localidade || "");
+            setUf(data.uf || "");
+          }
+        } catch {
+          /* ignorar erro de busca de CEP */
+        }
+        setIsCepLoading(false);
+      }
+    };
+    fetchCep();
+  }, [cep]);
 
   const handleSubmit: SubmitHandler<Company> = (data) => {
     data.address = `${street}, ${number}, ${neighborhood}, ${city}, ${uf}`;
+    data.cep = cep;
     if (onSubmit) onSubmit(data);
   };
 
@@ -124,6 +149,19 @@ export function CompanyForm({ onSubmit, initialValues }: CompanyFormProps) {
             </FormItem>
           )}
         />
+        {/* Campo de CEP fora do FormField, pois não faz parte do objeto Company */}
+        <div className="mb-2">
+          <FormLabel>CEP</FormLabel>
+          <div className="flex gap-2 items-center">
+            <Input
+              placeholder="00000-000"
+              value={cep}
+              maxLength={9}
+              onChange={e => setCep(e.target.value.replace(/[^0-9-]/g, ""))}
+            />
+            {isCepLoading && <span className="text-xs text-gray-500">Buscando...</span>}
+          </div>
+        </div>
         <FormField
           control={form.control}
           name="address"

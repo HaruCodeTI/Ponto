@@ -75,6 +75,7 @@ model Company {
   name          String
   cnpj          String        @unique
   address       String
+  cep           String?
   latitude      Float?
   longitude     Float?
   operationType OperationType @default(PRESENCIAL)
