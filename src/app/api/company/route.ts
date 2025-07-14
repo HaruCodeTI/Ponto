@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 import { Company, OperationType, Plan } from "@/types/company";
 
 export async function POST(req: NextRequest) {
@@ -59,11 +61,18 @@ export async function PATCH(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const company = await prisma.company.findFirst();
-    if (!company) {
-      return NextResponse.json({ company: null }, { status: 200 });
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ company: null }, { status: 401 });
     }
-    return NextResponse.json({ company }, { status: 200 });
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: { company: true }
+    });
+    if (!user?.company) {
+      return NextResponse.json({ company: null }, { status: 404 });
+    }
+    return NextResponse.json({ company: user.company }, { status: 200 });
   } catch {
     return NextResponse.json({ error: "Erro ao buscar empresa" }, { status: 500 });
   }

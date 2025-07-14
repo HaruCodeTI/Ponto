@@ -50,6 +50,13 @@ export function LocationValidator({
 
       setLocation(result.location);
       
+      // LOG: Verificar valores antes da validação
+      console.log('employeeLocation:', result.location);
+      console.log('companyLocation:', companyLocation);
+      if (result.location && companyLocation) {
+        console.log('employeeLocation types:', typeof result.location.latitude, typeof result.location.longitude);
+        console.log('companyLocation types:', typeof companyLocation.latitude, typeof companyLocation.longitude);
+      }
       // Valida localização baseada no tipo de operação
       const locationValidation = validateLocationByOperationType(
         result.location,
@@ -57,7 +64,8 @@ export function LocationValidator({
         operationType,
         isWorkingFromHome,
       );
-      
+      // LOG: Resultado da validação
+      console.log('locationValidation:', locationValidation);
       setValidation(locationValidation);
       onValidationChange(locationValidation);
 

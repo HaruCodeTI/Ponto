@@ -29,6 +29,7 @@ export function LocationPicker({
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const GOOGLE_MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAP_ID;
 
   // Carrega a API do Google Maps
   useEffect(() => {
@@ -65,6 +66,7 @@ export function LocationPicker({
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: false,
+      mapId: GOOGLE_MAP_ID,
     });
     // Novo marker
     const markerInstance = new google.maps.marker.AdvancedMarkerElement({
@@ -117,7 +119,7 @@ export function LocationPicker({
               currentLocation.longitude,
             );
             map.setCenter(latLng);
-            marker.setPosition(latLng);
+            (marker as unknown as google.maps.marker.AdvancedMarkerElement).position = latLng;
             setSelectedLocation(currentLocation);
             onLocationSelect(currentLocation);
           }
